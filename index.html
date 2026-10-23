@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>被遺忘者之路 Path of the Forgotten</title>
+<meta name="theme-color" content="#0c0b11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="被遺忘者之路">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Noto+Serif+TC:wght@700;900&family=Cinzel:wght@600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="floats"></div>
+
+<!-- 載入 -->
+<section id="load" class="screen">
+  <div class="logo"><h1>被遺忘者之路</h1><div class="en">PATH OF THE FORGOTTEN</div></div>
+  <div class="loadbar"><i id="loadFill"></i></div>
+  <div class="hint" id="loadTxt">喚醒骨骸中…</div>
+</section>
+
+<!-- 標題 -->
+<section id="title" class="screen" hidden>
+  <div class="logo big"><h1>被遺忘者之路</h1><div class="en">PATH OF THE FORGOTTEN</div></div>
+  <p class="lore">瘟疫的低語終於從腦中消失。<br>你記不得生前的名字，只記得——<br>沒有人會為亡者開門。</p>
+  <button type="button" class="btn pri wide" id="startBtn">踏上道路</button>
+  <div class="hint">手機直式最佳 · 進度存在此瀏覽器 · v0.5</div>
+</section>
+
+<!-- 主城 -->
+<section id="hub" hidden>
+  <header class="hubTop">
+    <div class="acct">
+      <div class="lvBadge"><small>等級</small><b id="hLv">1</b></div>
+      <div class="acctMain">
+        <div class="acctName">無名的被遺忘者</div>
+        <div class="xpbar"><i id="hXp"></i><span id="hXpT"></span></div>
+      </div>
+    </div>
+    <div class="cur">
+      <span class="c gold"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3.4" class="in"/></svg><b id="hGold">0</b></span>
+      <span class="c shard"><svg viewBox="0 0 16 16"><path d="M8 1l4 6-4 8-4-8z"/></svg><b id="hShard">0</b></span>
+      <span class="c crys"><svg viewBox="0 0 16 16"><path d="M8 1l4 4-4 10-4-10z"/></svg><b id="hCrys">0</b></span>
+    </div>
+  </header>
+  <div class="hubBody">
+    <div class="tab" id="tabStage"></div>
+    <div class="tab" id="tabLook" hidden></div>
+    <div class="tab" id="tabTal" hidden></div>
+    <div class="tab" id="tabGear" hidden></div>
+    <div class="tab" id="tabGacha" hidden></div>
+    <div class="tab" id="tabQuest" hidden></div>
+  </div>
+  <nav class="hubNav">
+    <button type="button" data-tab="tabStage" class="on"><svg viewBox="0 0 24 24"><path d="M5 21V4l7-2 7 2v17l-7-3z"/></svg>出征</button>
+    <button type="button" data-tab="tabGear"><svg viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 5-3 9-7 11-4-2-7-6-7-11V5z"/></svg>裝備<i class="dot" id="gearDot" hidden></i></button>
+    <button type="button" data-tab="tabGacha"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>召喚</button>
+    <button type="button" data-tab="tabQuest"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>任務<i class="dot" id="questDot" hidden></i></button>
+    <button type="button" data-tab="tabTal"><svg viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5 1 6.5L12 17l-5.5 3 1-6.5L3 9l6-1z"/></svg>天賦<i class="dot" id="talDot" hidden></i></button>
+    <button type="button" data-tab="tabLook"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-7 7c0 2.6 1.3 4.4 3 5.5V18h8v-3.5c1.7-1.1 3-2.9 3-5.5a7 7 0 00-7-7zM9 9.5a1.5 1.5 0 110 .01M15 9.5a1.5 1.5 0 110 .01M9 20h6v2H9z"/></svg>外觀</button>
+  </nav>
+</section>
+
+<!-- 副本 HUD -->
+<section id="hud" hidden>
+  <div class="hudTop">
+    <div class="stageTag"><small id="hudStage"></small><b id="hudFloor"></b></div>
+    <div class="hudRight">
+      <span class="c gold"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3.4" class="in"/></svg><b id="hudGold">0</b></span>
+      <button type="button" class="iconBtn" id="pauseBtn" aria-label="暫停"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+    </div>
+  </div>
+  <div class="hpWrap"><div class="hpbar"><i id="hpGhost"></i><i id="hpFill"></i><span id="hpTxt"></span></div>
+    <div class="xpWrap"><b id="xpLv">Lv 1</b><div class="xpbar2"><i id="xpFill"></i></div></div></div>
+  <div id="hudTimer" hidden></div>
+  <div class="perkRow" id="perkRow"></div>
+  <div id="bossBar" hidden><div class="bn" id="bossName"></div><div class="bb"><i id="bossFill"></i></div></div>
+  <div id="actBtns" hidden></div>
+  <div id="joy"><div id="joyK"></div></div>
+  <div class="joyHint" id="joyHint">按住畫面任意處移動 · 停下自動施法</div>
+</section>
+
+<div id="banner"><b id="bnT"></b><small id="bnS"></small></div>
+<div id="fade"><span id="fadeTxt"></span></div>
+
+<!-- 三選一 -->
+<section id="perk" class="ov" hidden>
+  <div class="perkBox">
+    <div class="perkHead"><small id="perkSub">第 1 層淨空</small><h2 id="perkBox_h">選擇一項力量</h2></div>
+    <div class="perkCards" id="perkCards"></div>
+    <div class="perkFoot" id="perkFoot"></div>
+    <button type="button" class="btn ghost" id="rerollBtn" hidden>重抽（剩 <b id="rerollN">0</b> 次）</button>
+  </div>
+</section>
+
+<!-- 結算 -->
+<section id="result" class="ov" hidden>
+  <div class="sheet">
+    <div class="resHead"><small id="resSub"></small><h2 id="resTitle"></h2></div>
+    <div class="resStats" id="resStats"></div>
+    <div class="resLoot" id="resLoot"></div>
+    <div class="row"><button type="button" class="btn" id="resRetry">再挑戰</button><button type="button" class="btn pri" id="resHub">返回營地</button></div>
+  </div>
+</section>
+
+<!-- 暫停 -->
+<section id="pause" class="ov" hidden>
+  <div class="sheet">
+    <div class="resHead"><small>副本暫停</small><h2>喘口氣</h2><small id="pauseInfo"></small></div>
+    <div class="perkList" id="pausePerks"></div>
+    <div class="qrow"><span>角色風格</span><div class="seg styleSeg"><button type="button" data-s="model">3D 模型</button><button type="button" data-s="pixel">像素</button></div></div>
+    <div class="qrow"><span>畫質</span><div class="seg" id="qSeg"><button type="button" data-q="low">省電</button><button type="button" data-q="mid">標準</button><button type="button" data-q="high">精緻</button></div></div>
+    <div class="row"><button type="button" class="btn ghost" id="quitBtn">放棄並結算</button><button type="button" class="btn" id="saveQuitBtn">保存並回營地</button></div>
+    <div class="row"><button type="button" class="btn pri" id="resumeBtn">繼續戰鬥</button></div>
+  </div>
+</section>
+
+<!-- 通用面板 -->
+<section id="modal" class="ov" hidden><div class="sheet" id="modalBox"></div></section>
+
+<div id="toast"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/SkeletonUtils.js"></script>
+<script src="data/rules.js"></script>
+<script src="data/enemies.js"></script>
+<script src="data/stages.js"></script>
+<script src="data/skills.js"></script>
+<script src="data/gear.js"></script>
+<script src="data/meta.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/world.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/run.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/main.js"></script>
+<script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+Stylized Nature MegaKit by Quaternius (quaternius.com)
+License: CC0 1.0 Universal (public domain). Free for personal and commercial use.
+Models were converted to .glb and textures downscaled for this project.
