@@ -264,11 +264,21 @@ function updCam(k){if(G.mode==='run'){if(camFitW!==VW||camFitH!==VH){camFitW=VW;
     const sx=shake>0?rnd(-1,1)*shake*.5:0,sz=shake>0?rnd(-1,1)*shake*.5:0;camera.position.set(camT.x+sx,camT.y+Math.sin(camPitch)*camDist,camT.z+Math.cos(camPitch)*camDist+sz);camera.lookAt(camT.x+sx,camT.y,camT.z+sz)}
   else{const port=VW<VH,t=G.time*.1,yaw=Math.sin(t)*.22+.25,dist=port?15:11;camera.fov=port?40:34;camera.aspect=VW/VH;
     camera.position.set(Math.sin(yaw)*dist,port?5.2:4,Math.cos(yaw)*dist);camera.lookAt(0,port?.6:.9,0);
-    if(G.mode==='hub')camera.setViewOffset(VW,VH,port||VW<760?0:VW*.2,VH*(port?.26:VW<760?.14:.04),VW,VH);else camera.setViewOffset(VW,VH,0,VH*(port?.16:.05),VW,VH);camera.updateProjectionMatrix()}}
+    if(G.mode==='hub')camera.setViewOffset(VW,VH,port||VW<760?0:VW*.2,(port?hubOffY():VH*(VW<760?.14:.04)),VW,VH);else camera.setViewOffset(VW,VH,0,VH*(port?.16:.05),VW,VH);camera.updateProjectionMatrix()}}
 
 /* ================= 品質、尺寸 ================= */
 function applyQuality(){const q=QUAL[SAVE?SAVE.q:'mid']||QUAL.mid;renderer.setPixelRatio(Math.min(devicePixelRatio||1,q.pr));renderer.shadowMap.enabled=q.sh>0;sun.castShadow=q.sh>0;
   if(q.sh){sun.shadow.mapSize.set(q.sh,q.sh);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
   scene.traverse(n=>{if(n.material){const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>m.needsUpdate=true)}});resize()}
-function resize(){VW=innerWidth;VH=innerHeight;renderer.setSize(VW,VH,false);camera.aspect=VW/VH;camFitW=0;camera.updateProjectionMatrix()}
-addEventListener('resize',resize);
+/* iOS 加到主畫面（standalone）時 innerHeight 可能少算一截，改用整個螢幕高度 */
+const STANDALONE=navigator.standalone===true||(matchMedia&&matchMedia('(display-mode: standalone)').matches);
+let SAFE_T=0,hubGapT=-9,hubGapY=0;
+/* 主城人物放在「上方資訊列」與「下方面板」之間的空隙正中央 */
+function hubOffY(){if(G.time-hubGapT>.25||G.time<hubGapT){hubGapT=G.time;const hd=document.querySelector('#hub .hubTop'),tb=[...document.querySelectorAll('#hub .tab')].find(x=>!x.hidden);
+  const a=hd?hd.getBoundingClientRect().bottom:VH*.15,b=tb&&tb.offsetHeight?tb.getBoundingClientRect().top:VH*.62;hubGapY=b>a+40?(a+b)/2:VH*.24}
+  return VH*.5-hubGapY+VH*.03}
+function viewH(){const port=innerWidth<innerHeight;let h=innerHeight;if(STANDALONE&&screen&&screen.height){const sh=port?Math.max(screen.width,screen.height):Math.min(screen.width,screen.height);if(Math.abs(innerWidth-(port?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height)))<2)h=Math.max(h,sh)}return h}
+function resize(){VW=innerWidth;VH=viewH();document.documentElement.style.setProperty('--vh',VH+'px');
+  const pr=document.getElementById('safeProbe');SAFE_T=pr?pr.offsetHeight:0;
+  renderer.setSize(VW,VH,false);camera.aspect=VW/VH;camFitW=0;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,350));addEventListener('pageshow',()=>setTimeout(resize,100));

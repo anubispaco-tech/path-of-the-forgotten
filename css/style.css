@@ -13,9 +13,9 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--fb);overflow:hidden;
+html,body{margin:0;height:var(--vh,100%);background:var(--bg);color:var(--ink);font-family:var(--fb);overflow:hidden;
   overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#gl{position:fixed;top:0;left:0;right:0;width:100%;height:var(--vh,100%);display:block}
 button{font-family:var(--fb);color:inherit;cursor:pointer}
 button:focus-visible{outline:2px solid var(--soul);outline-offset:2px}
 [hidden]{display:none!important}
@@ -34,7 +34,7 @@ svg{fill:currentColor}
 .row .btn{flex:1}
 .hint{font-size:11px;letter-spacing:.12em;color:#ffffff4a}
 
-.ov{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,#0c0a12cc,#050408ee);
+.ov{position:fixed;top:0;left:0;right:0;height:var(--vh,100%);z-index:40;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,#0c0a12cc,#050408ee);
   padding:16px;padding-left:max(16px,var(--sl));padding-right:max(16px,var(--sr));animation:fadeIn .2s}
 .sheet{position:relative;width:min(100%,400px);max-height:86vh;overflow:auto;background:linear-gradient(#1a1622,#120f18);border-radius:10px;padding:22px 18px 18px;
   box-shadow:0 0 0 1px #000,0 0 0 2px var(--line2),0 0 0 3px #000,0 24px 60px #000c}
@@ -45,7 +45,7 @@ svg{fill:currentColor}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
 /* ---------- 載入、標題 ---------- */
-.screen{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px}
+.screen{position:fixed;top:0;left:0;right:0;height:var(--vh,100%);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px}
 #load{background:radial-gradient(ellipse at 50% 35%,#211a2e,#0c0b11 70%)}
 #title{background:linear-gradient(#0c0b1100 30%,#0c0b11d0 75%,#0c0b11 100%);justify-content:flex-end;padding-bottom:calc(56px + var(--sb))}
 .logo h1{font-family:var(--fd);font-weight:900;font-size:clamp(34px,10vw,52px);margin:0;letter-spacing:.14em;
@@ -58,7 +58,7 @@ svg{fill:currentColor}
 .loadbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--felD),var(--fel));box-shadow:0 0 10px var(--fel);transition:width .2s}
 
 /* ---------- 主城 ---------- */
-#hub{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;pointer-events:none}
+#hub{position:fixed;top:0;left:0;right:0;height:var(--vh,100%);z-index:20;display:flex;flex-direction:column;pointer-events:none}
 #hub>*{pointer-events:auto}
 .hubTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(10px + var(--st)) max(14px,var(--sr)) 10px max(14px,var(--sl));
   background:linear-gradient(#0c0b11f0,#0c0b1100)}
@@ -80,7 +80,7 @@ svg{fill:currentColor}
 .c.crys svg{color:#5affe6}
 
 .hubBody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none!important}
-.tab{pointer-events:auto;max-height:62vh;overflow:auto;padding:12px max(14px,var(--sr)) 12px max(14px,var(--sl));
+.tab{pointer-events:auto;max-height:max(220px,calc(var(--vh,100vh) - var(--st) - 420px));overflow:auto;padding:12px max(14px,var(--sr)) 12px max(14px,var(--sl));
   background:linear-gradient(#0c0b1100,#0c0b11e8 40px,#0c0b11);animation:rise .25s}
 .tabTitle{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 8px}
 .tabTitle h3{margin:0;font-family:var(--fd);font-size:17px;font-weight:900;letter-spacing:.08em}
@@ -162,7 +162,7 @@ svg{fill:currentColor}
 .lkNote{font-size:11px;color:var(--dim);text-align:center;margin:10px 0 0}
 
 /* ---------- 副本 HUD ---------- */
-#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+#hud{position:fixed;top:0;left:0;right:0;height:var(--vh,100%);z-index:10;pointer-events:none}
 .hudTop{display:flex;justify-content:space-between;align-items:flex-start;padding:calc(8px + var(--st)) max(12px,var(--sr)) 0 max(12px,var(--sl))}
 .stageTag small{display:block;font-size:11px;color:var(--mute);letter-spacing:.1em;text-shadow:0 1px 3px #000}
 .stageTag b{font-family:var(--fd);font-size:20px;font-weight:900;letter-spacing:.08em;text-shadow:0 2px 4px #000,0 0 12px #000}
@@ -190,7 +190,7 @@ svg{fill:currentColor}
 .joyHint{position:absolute;left:0;right:0;bottom:calc(30px + var(--sb));text-align:center;font-size:12px;color:#ffffff70;letter-spacing:.08em;text-shadow:0 1px 3px #000;transition:opacity .5s}
 
 /* 浮動傷害 */
-#floats{position:fixed;inset:0;z-index:12;pointer-events:none;overflow:hidden}
+#floats{position:fixed;top:0;left:0;right:0;height:var(--vh,100%);z-index:12;pointer-events:none;overflow:hidden}
 .ft{position:absolute;left:0;top:0;font-weight:900;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;will-change:transform,opacity;
   text-shadow:0 0 3px #000,0 2px 0 #000;font-family:var(--fb)}
 .ft.crit{font-size:21px;color:#ffd04a}
@@ -202,7 +202,7 @@ svg{fill:currentColor}
 #banner b{display:block;font-family:var(--fd);font-weight:900;font-size:clamp(28px,8vw,40px);letter-spacing:.16em;color:#fff6e0;text-shadow:0 3px 0 #000,0 0 24px #000,0 0 30px var(--bc,#8fe36a66)}
 #banner small{display:block;margin-top:6px;font-size:13px;font-weight:700;letter-spacing:.3em;color:var(--bc,var(--fel));text-shadow:0 2px 4px #000}
 #banner::before{content:"";position:absolute;left:10%;right:10%;top:50%;height:80px;transform:translateY(-50%);background:radial-gradient(ellipse,#000a,transparent 70%);z-index:-1}
-#fade{position:fixed;inset:0;z-index:35;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+#fade{position:fixed;top:0;left:0;right:0;height:var(--vh,100%);z-index:35;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
 #fade.on{opacity:1}
 #toast{position:fixed;left:50%;bottom:calc(120px + var(--sb));transform:translateX(-50%);z-index:60;pointer-events:none;padding:9px 16px;border-radius:20px;background:#000d;box-shadow:0 0 0 1px var(--line2);
   font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;white-space:nowrap}
@@ -379,3 +379,5 @@ svg{fill:currentColor}
   .hubNav{justify-content:flex-end;padding-right:max(18px,var(--sr))}.hubNav button{flex:0 0 min(84px,7.4vw)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+#safeProbe{position:fixed;top:0;left:0;width:0;height:var(--st);visibility:hidden;pointer-events:none}
