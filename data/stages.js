@@ -49,11 +49,13 @@ D.STAGES = [
 ];
 
 /* ---------- 難度 ----------
- * 通關普通解鎖困難；困難通關、且第五章普通通關後解鎖地獄 */
+ * 通關普通解鎖困難；困難通關、且第五章普通通關後解鎖地獄
+ * count：怪物數量倍率（局內經驗會等比例攤薄，不會因為怪多就升太快）
+ * spd：怪物移動與彈速倍率；heal：營火、魂火泉、升級回血倍率；waveP：多波次機率 */
 D.DIFFS = [
-  { id:'n', n:'普通', hp:1,   dmg:1,   loot:1,   affix:0,   col:'#c9c2b0' },
-  { id:'h', n:'困難', hp:1.6, dmg:1.3, loot:1.6, affix:.25, col:'#ffa53a' },
-  { id:'x', n:'地獄', hp:2.5, dmg:1.6, loot:2.4, affix:.5,  col:'#ff4a4a', mythic:true }
+  { id:'n', n:'普通', hp:1,   dmg:1,   loot:1,   affix:0,   count:1,    spd:1,    heal:1,   waveP:.45, col:'#c9c2b0' },
+  { id:'h', n:'困難', hp:1.5, dmg:1.35,loot:1.6, affix:.3,  count:1.25, spd:1.08, heal:.85, waveP:.6,  col:'#ffa53a' },
+  { id:'x', n:'地獄', hp:2.2, dmg:1.8, loot:2.4, affix:.6,  count:1.55, spd:1.16, heal:.65, waveP:.75, col:'#ff4a4a', mythic:true }
 ];
 
 /* ---------- 房間事件（第 5、15、25 間） ---------- */

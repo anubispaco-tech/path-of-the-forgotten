@@ -19,8 +19,12 @@ D.RULES = {
   matDaily: 3,
   idleCapH: 8,
   idleRate: { gold: 30, shards: 3 },     // 每小時，會乘上 (1 + 帳號等級 × 0.1)
-  runXp: { base: 3, per: 2.4 },          // 局內升級所需經驗：base + per × 目前等級
-  roomBudget: { base: 2.6, per: .17 },   // 戰鬥房的怪物點數：base + per × 房號
+  runXp: { base: 3, per: 3 },            // 局內升級所需經驗：base + per × 目前等級
+  roomBudget: { base: 3.6, per: .26 },   // 戰鬥房的怪物點數：base + per × 房號（會再乘難度的 count）
+  waves: { two: 4, three: 16 },          // 第幾間起可能出現 2 波、3 波
+  waveEarly: .3,                         // 這一波剩下多少比例的怪時，下一波提前進場（0 = 清空才進場）
+  pack: 3,                               // 近戰小怪一次 3 隻以上會成群出現
+  hitstop: { multi: 3, multiT: .045, elite: .08, boss: .16 }, // 命中停頓：多殺門檻、多殺/菁英/首領停頓秒數
   roomHp: .05,                           // 每往後一間，怪物生命 +5%
   roomDmg: .012
 };

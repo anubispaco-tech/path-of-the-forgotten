@@ -28,7 +28,7 @@ function enemyScale(d,summoned){const lv=RUN.lv,i=RUN.roomN,df=RUN.diff,R=D.RULE
 function spawnEnemy(key,x,z,o){o=o||{};const d=D.ENEMIES[key];if(!d)return null;const el=!!o.elite,sc=d.scale*(el?D.ELITE.scale:1)*(o.small?.75:1);
   const c=makeActor(d.model,{scale:sc,eye:el?'#ffd04a':d.eye,tint:d.tint,recolor:d.recolor,show:d.show,wr:d.wr,wl:d.wl,emis:el?'#3a2a08':d.emis,pixScale:el?1.3:1},key);c.root.position.set(x,d.fly||0,z);scene.add(c.root);
   const{hpM,dmM}=enemyScale(d,o.summoned||o.small);const hp=Math.round(d.hp*hpM*(el?D.ELITE.hp:1)*(o.small?.45:1));
-  const e={key,d,c,x,z,yaw:Math.atan2(P.x-x,P.z-z),r:d.r*(el?1.25:1),hp,max:hp,dmg:d.dmg*dmM*(el?D.ELITE.dmg:1),spd:d.spd,state:'rise',t:0,slowT:0,burnT:0,burnD:0,flashT:0,kx:0,kz:0,
+  const e={key,d,c,x,z,yaw:Math.atan2(P.x-x,P.z-z),r:d.r*(el?1.25:1),hp,max:hp,dmg:d.dmg*dmM*(el?D.ELITE.dmg:1),spd:d.spd*(RUN.diff.spd||1),state:'rise',t:0,slowT:0,burnT:0,burnD:0,flashT:0,kx:0,kz:0,
     cd:rnd(.8,2),touchT:0,phase:0,side:Math.random()<.5?-1:1,sideT:0,ai:{},sh:shadowFor(d.r*(el?1.3:1)),boss:!!d.boss,elite:el,dead:false,haste:1,aff:[],stunT:0,shield:0,small:!!o.small,summoned:!!o.summoned};
   for(const a of(o.aff||[]))addAffix(e,a);
   c.root.rotation.y=e.yaw;enemies.push(e);
@@ -79,7 +79,8 @@ function updBolts(dt){for(let i=bolts.length-1;i>=0;i--){const b=bolts[i];b.life
 /* 傷害：src = bolt（主攻擊，會觸發冰火閃電）、orb、ally、aoe、dot、chain */
 function hitEnemy(e,base,a,col,o){if(e.dead)return;o=o||{};const S=RUN.st;let dmg=base*rnd(.92,1.08),crit=false;if(!o.noCrit&&Math.random()<S.crit){dmg*=S.critM;crit=true}dmg=Math.max(1,Math.round(dmg));
   if(e.shield>0){const ab=Math.min(e.shield,dmg);e.shield-=ab;dmg-=ab;if(e.shield<=0&&e.shFx){scene.remove(e.shFx);e.shFx=null;ringFx(e.x,e.z,2,'#7df9ff',.4);floatTxt(e.x,2.2,e.z,'護盾破碎','#7df9ff')}if(dmg<=0){e.flashT=.06;emit(e.x,1,e.z,'#7df9ff',3,2,.2);return}}
-  e.hp-=dmg;RUN.dmgDone+=dmg;e.flashT=.09;if(!e.boss&&!e.elite&&e.state!=='charge'&&o.src==='bolt'){e.kx+=Math.sin(a)*1.6;e.kz+=Math.cos(a)*1.6}
+  e.hp-=dmg;RUN.dmgDone+=dmg;e.flashT=.09;e.sqT=crit?.13:.09;
+  if(crit){pop(e.x,1.1+(e.d.fly||0),e.z,'#ffd98a',e.boss?2:1.25,.14);shake=Math.max(shake,.05)}if(!e.boss&&!e.elite&&e.state!=='charge'&&o.src==='bolt'){e.kx+=Math.sin(a)*1.6;e.kz+=Math.cos(a)*1.6}
   floatTxt(e.x,1.7+e.d.scale+(e.d.fly||0),e.z,dmg,crit?'#ffd04a':o.src==='dot'?'#b0ff8a':o.src==='chain'?'#bfe8ff':'#ffffff',crit?'crit':o.src==='dot'?'dot':'');emit(e.x,1+(e.d.fly||0),e.z,col||'#b06bff',crit?10:5,3,.3);
   if(o.src==='bolt'||o.src==='orb'){if(perk('frost')){e.slowT=2}if(perk('fire')){e.burnT=2.2;e.burnD=S.atk*.35*S.elemM}
     if(perk('steam')&&e.slowT>0&&e.burnT>0&&G.time>(e.steamT||0)){e.steamT=G.time+1.5;later(.05,()=>explode(e.x,e.z,2,S.atk*1.2*S.elemM,'#ffffff','steam'))}
@@ -91,13 +92,16 @@ function explode(x,z,r,dmg,col,kind,skip){ringFx(x,z,r,col,.35);emit(x,.8,z,col,
   for(const e of enemies){if(e.dead||e===skip)continue;if(Math.hypot(e.x-x,e.z-z)<r+e.r)hitEnemy(e,dmg,Math.atan2(e.x-x,e.z-z),col,{noCrit:true,src:kind==='corpse'?'corpse':'aoe'})}}
 function chainZap(from,n,force){const S=RUN.st,hit=new Set([from]);let cur=from;for(let k=0;k<n;k++){let nb=null,nd=4.5;for(const o of enemies){if(o.dead||hit.has(o))continue;const d=Math.hypot(o.x-cur.x,o.z-cur.z);if(d<nd){nd=d;nb=o}}if(!nb)break;
   zap(cur.x,1.1+(cur.d.fly||0),cur.z,nb.x,1.1+(nb.d.fly||0),nb.z,'#bfe8ff');hit.add(nb);const t=nb;hitEnemy(t,S.atk*.5*S.elemM*(force?1.2:1),0,'#bfe8ff',{noCrit:true,src:'chain'});cur=nb}}
-function killEnemy(e,src){e.dead=true;e.hp=0;e.state='dead';e.t=0;RUN.kills++;track('kill');once(e.c,'Death_A',1.3);emit(e.x,.8,e.z,e.d.eye||'#ffe9a0',e.boss?60:16,3.5,.7,{gr:3});ringFx(e.x,e.z,e.boss?5:1.6,e.d.eye||'#ffe9a0',.5);
+function killEnemy(e,src){e.dead=true;e.hp=0;e.state='dead';e.t=0;RUN.kills++;track('kill');if(e.sqOn){e.sqOn=false;e.sqT=0;e.c.root.scale.set(1,1,1)}
+  const kc=e.d.eye||e.d.bolt||'#ffe9a0',HS=D.RULES.hitstop||{};pop(e.x,1+(e.d.fly||0),e.z,kc,e.boss?6:e.elite?3.6:2.2,e.boss?.45:.22);pop(e.x,1+(e.d.fly||0),e.z,'#ffffff',e.boss?2.4:e.elite?1.4:.75,.1);emit(e.x,1,e.z,'#ffffff',e.boss?20:5,5,.25);
+  if(e.boss)hitStop(HS.boss||.16);else if(e.elite){hitStop(HS.elite||.08);shake=Math.max(shake,.25)}
+  else{const now=RUN.time;if(now-(RUN.mkT||0)>.15){RUN.mkT=now;RUN.mkN=0}RUN.mkN++;if(RUN.mkN===(HS.multi||3)){hitStop(HS.multiT||.045);shake=Math.max(shake,.14);ringFx(e.x,e.z,2.6,'#ffffff',.3)}}once(e.c,'Death_A',1.3);emit(e.x,.8,e.z,e.d.eye||'#ffe9a0',e.boss?60:16,3.5,.7,{gr:3});ringFx(e.x,e.z,e.boss?5:1.6,e.d.eye||'#ffe9a0',.5);
   if(e.beam){scene.remove(e.beam);e.beam=null}if(e.shFx){scene.remove(e.shFx);e.shFx=null}if(e.aura){scene.remove(e.aura);e.aura=null}
   const st=RUN.stage,gv=1+Math.floor((RUN.lv-1)*.3);let gN=ri(e.d.gold[0],e.d.gold[1])+(st.loot==='gold'?ri(2,4):0);if(e.elite)gN+=ri(D.ELITE.gold[0],D.ELITE.gold[1]);for(let i=0;i<gN;i++)dropLoot('gold',e.x,e.z,gv);
   if(st.loot==='shards'?Math.random()<.75:Math.random()<.08)dropLoot('shard',e.x,e.z,1);
   if(st.loot==='dust'&&Math.random()<.5)dropLoot('dust',e.x,e.z,ri(1,2));
   if(st.loot==='crystals'&&Math.random()<.35)dropLoot('crystal',e.x,e.z,1);
-  if(!e.boss&&!e.summoned){const xv=(e.d.xp||1)*(e.elite?D.ELITE.xp/(e.d.xp||1):1);dropLoot('xp',e.x,e.z,e.small?Math.max(1,xv*.4):xv)}
+  if(!e.boss&&!e.summoned){const xv=(e.d.xp||1)*(e.elite?D.ELITE.xp/(e.d.xp||1):1);const xc=xv/(RUN.diff.count||1);dropLoot('xp',e.x,e.z,e.small?Math.max(.5,xc*.4):xc)}
   if(e.elite){RUN.elites++;track('elite')}
   if(perk('leech'))healP(Math.round(RUN.maxHp*.03*perk('leech')));
   const S=RUN.st;
@@ -110,7 +114,7 @@ function killEnemy(e,src){e.dead=true;e.hp=0;e.state='dead';e.t=0;RUN.kills++;tr
     if(twin){twin.rage=true;banner(twin.d.n.split(' · ')[1]||twin.d.n,'陷入狂怒','#ff6a3a');shake=.4}
     else{$('bossBar').hidden=true;shake=.6;lightFlash(e.x,e.z,'#ffe9a0',4);for(const o of enemies)if(!o.dead&&o!==e)killEnemy(o,'boss')}}
   if(e.boss||e.elite)updBoss();
-  if(!enemies.some(o=>!o.dead))later(.45,waveCleared)}
+  if(!enemies.some(o=>!o.dead))later(.45,waveCleared);else earlyWave()}
 const LOOT_LOOK={gold:['#ffd76a','#5a3a08'],shard:['#bfe4ff','#1a4a6a'],dust:['#8fa8ff','#1a2a6a'],crystal:['#5affe6','#0a5a50']};
 function dropLoot(kind,x,z,v){let m;if(kind==='xp'){m=new T.Group();glow('#9dff6a',v>=8?1.1:.6,m,.9);const core=new T.Mesh(GEO.oct,M('#d8ffc0',{emissive:'#3a8a20'}));core.scale.setScalar(v>=8?.32:.18);m.add(core)}
   else if(kind==='gold'){m=new T.Mesh(GEO.coin,M('#ffd76a',{emissive:'#5a3a08'}))}else{const c=LOOT_LOOK[kind];m=new T.Mesh(GEO.oct,M(c[0],{emissive:c[1]}));m.scale.setScalar(kind==='crystal'?.36:.3)}
@@ -143,7 +147,8 @@ function updEnemies(dt){for(const e of enemies){const c=e.c;e.t+=dt;
   for(const o of enemies){if(o===e||o.dead)continue;const ox=e.x-o.x,oz=e.z-o.z,d=Math.hypot(ox,oz),m=e.r+o.r;if(d>0&&d<m){const p=(m-d)*.5;moveEnt(e,ox/d*p,oz/d*p,e.r)}}
   const pr=e.r+.38;if(dist<pr){const p=pr-dist;moveEnt(e,-dx/dist*p,-dz/dist*p,e.r)}
   const fy=e.d.fly?e.d.fly+Math.sin(G.time*3+e.x)*.12:c.root.position.y;
-  c.root.position.set(e.x,fy,e.z);c.root.rotation.y=angLerp(c.root.rotation.y,e.yaw,Math.min(1,dt*12));e.sh.position.set(e.x,.02,e.z);
+  c.root.position.set(e.x,fy,e.z);c.root.rotation.y=angLerp(c.root.rotation.y,e.yaw,Math.min(1,dt*12));
+  if(e.sqT>0&&e.state!=='rise'){e.sqT-=dt;const k=Math.max(0,e.sqT)/.13,b=e.boss?.4:1;c.root.scale.set(1+.14*k*b,1-.2*k*b,1+.14*k*b);e.sqOn=e.sqT>0;if(!e.sqOn)c.root.scale.set(1,1,1)}e.sh.position.set(e.x,.02,e.z);
   if(e.shFx)e.shFx.position.set(e.x,1+(e.d.fly||0),e.z);if(e.aura)e.aura.position.set(e.x,.15,e.z)}
   for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.dead&&e.t>2.6){disposeChar(e.c);scene.remove(e.sh);enemies.splice(i,1)}}}
 const STEER=[0,.45,-.45,.9,-.9,1.35,-1.35,1.8,-1.8];
@@ -167,7 +172,7 @@ function aiCaster(e,dt,slow,dist,dx,dz,face){const a=e.ai;e.cd-=dt;e.yaw=face;
     if(e.force&&dist>1.6)walkTo(e,dx,dz,dist,sp,dt);else if(dist<4.5&&!e.force)walkTo(e,-dx,-dz,dist,sp,dt);else if(dist>8.5||losBlocked(e.x,e.z,P.x,P.z))walkTo(e,dx,dz,dist,sp,dt);
     else{const s=Math.sin(a.str*.9+e.x)>0?1:-1;moveEnt(e,dz/dist*sp*.5*s*dt,-dx/dist*sp*.5*s*dt,e.r);play(e.c,'Walking_A',.2,1)}
     if(e.cd<=0&&dist<11&&!losBlocked(e.x,e.z,P.x,P.z)){e.state='cast';e.t=0;once(e.c,'Spellcast_Shoot',1.2);a.g=glow(e.d.bolt,1.4,e.c.root);a.g.position.set(0,1.4,.4)}}
-  else if(e.state==='cast'){if(a.g)a.g.scale.setScalar(.6+e.t*2.2);if(e.t>=.55){if(a.g){e.c.root.remove(a.g);a.g=null}const n=(e.d.shots||1)+(e.elite?2:0);for(let i=0;i<n;i++)eshoot(e,face+(i-(n-1)/2)*.32,e.d.boltSpd||5.6,e.d.bolt,e.dmg);e.state='act';e.cd=rnd(2,2.8)}}}
+  else if(e.state==='cast'){if(a.g)a.g.scale.setScalar(.6+e.t*2.2);if(e.t>=.55){if(a.g){e.c.root.remove(a.g);a.g=null}const n=(e.d.shots||1)+(e.elite?2:0);for(let i=0;i<n;i++)eshoot(e,face+(i-(n-1)/2)*.32,(e.d.boltSpd||5.6)*(RUN.diff.spd||1),e.d.bolt,e.dmg);e.state='act';e.cd=rnd(2,2.8)}}}
 function aiSlammer(e,dt,slow,dist,dx,dz,face){const a=e.ai;e.cd-=dt;const R=1.9*(e.elite?1.3:1);
   if(e.state==='act'){e.yaw=face;if(dist<2.1+(e.elite?.4:0)&&e.cd<=0){e.state='wind';e.t=0;a.x=e.x+Math.sin(face)*1.1;a.z=e.z+Math.cos(face)*1.1;play(e.c,'Idle_Combat');tele('circle',a.x,a.z,{r:R},.8)}
     else if(dist>1.5)walkTo(e,dx,dz,dist,e.spd*slow,dt);else play(e.c,'Idle_Combat')}
@@ -180,7 +185,7 @@ function aiBoss(e,dt,slow,dist,dx,dz,face){const a=e.ai,rage=e.rage||e.hp<e.max*
       if(m==='charge'){a.ang=face;tele('line',e.x,e.z,{a:face,w:2,len:12},.9);play(e.c,'Idle_Combat')}
       if(m==='summon'){once(e.c,'Spellcast_Raise',1);a.sum=13}
       if(m==='nova'||m==='spores'){once(e.c,'Spellcast_Raise',1.2)}}}
-  else if(e.state==='nova'){const waves=rage?3:2;if(e.t>=.5+a.k*.55&&a.k<waves){const n=rage?20:16,off=a.k*.5/n*TAU+Math.random();for(let i=0;i<n;i++)eshoot(e,off+i/n*TAU,rage?5.2:4.6,e.d.bolt,e.dmg*.8,1);ringFx(e.x,e.z,3,e.d.bolt,.4);a.k++}
+  else if(e.state==='nova'){const waves=rage?3:2;if(e.t>=.5+a.k*.55&&a.k<waves){const n=rage?20:16,off=a.k*.5/n*TAU+Math.random();for(let i=0;i<n;i++)eshoot(e,off+i/n*TAU,(rage?5.2:4.6)*(RUN.diff.spd||1),e.d.bolt,e.dmg*.8,1);ringFx(e.x,e.z,3,e.d.bolt,.4);a.k++}
     if(e.t>.6+waves*.55){e.state='act';e.cd=rage?1.4:2}}
   else if(e.state==='spores'){const n=rage?5:4;if(a.k<n&&e.t>=.4+a.k*.25){const px=clamp(P.x+rnd(-2.5,2.5),-HX+1,HX-1),pz=clamp(P.z+rnd(-2.5,2.5),-HZ+1,HZ-1),dmg=e.dmg;tele('circle',px,pz,{r:1.3,col:'#b0ff3a'},.9,()=>{puddle(px,pz,1.3,'#b0ff3a',4,{kind:'toxic',dmg:dmg*.45});emit(px,.4,pz,'#b0ff3a',14,2,.6,{up:1})});a.k++}
     if(e.t>.6+n*.25+.6){e.state='act';e.cd=rage?1.3:1.9}}

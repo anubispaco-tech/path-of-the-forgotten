@@ -223,12 +223,22 @@ function lightFlash(x,z,col,k){fxLight.position.set(x,1.5,z);fxLight.color.set(c
 const zaps=[];
 function zap(x1,y1,z1,x2,y2,z2,col){const n=7,pts=[];for(let i=0;i<=n;i++){const t=i/n,j=i===0||i===n?0:.35;pts.push(new T.Vector3(lerp(x1,x2,t)+rnd(-j,j),lerp(y1,y2,t)+rnd(-j,j)*.6,lerp(z1,z2,t)+rnd(-j,j)))}
   const g=new T.BufferGeometry().setFromPoints(pts),m=new T.LineBasicMaterial({color:col||'#bfe8ff',transparent:true,opacity:1,blending:T.AdditiveBlending,depthWrite:false});const l=new T.Line(g,m);scene.add(l);zaps.push({l,t:0});
-  const gl=glow(col||'#bfe8ff',1.4);gl.position.set(x2,y2,z2);zaps.push({l:gl,t:0,spr:1})}
-function updZaps(dt){for(let i=zaps.length-1;i>=0;i--){const z=zaps[i];z.t+=dt;const k=1-z.t/.2;if(k<=0){scene.remove(z.l);if(!z.spr){z.l.geometry.dispose();z.l.material.dispose()}zaps.splice(i,1);continue}if(!z.spr)z.l.material.opacity=k;else z.l.scale.setScalar(1.4*k)}}
+  // 白色核心線＋沿路光珠，假裝閃電有粗細（WebGL 的線永遠 1px）
+  const g2=new T.BufferGeometry().setFromPoints(pts.map(p=>p.clone().add(new T.Vector3(rnd(-.05,.05),.04,rnd(-.05,.05))))),l2=new T.Line(g2,new T.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:1,blending:T.AdditiveBlending,depthWrite:false}));scene.add(l2);zaps.push({l:l2,t:0});
+  for(const i of[2,5]){const b=glow(col||'#bfe8ff',.9,null,.8);b.position.copy(pts[i]);zaps.push({l:b,t:0,spr:1,s:.9})}
+  const gl=glow(col||'#bfe8ff',1.4);gl.position.set(x2,y2,z2);zaps.push({l:gl,t:0,spr:1,s:1.9});const gw=glow('#ffffff',.7);gw.position.set(x2,y2,z2);zaps.push({l:gw,t:0,spr:1,s:.9})}
+/* 光爆：命中、爆擊、擊殺時一閃而過的光團 */
+const pops=[];
+function pop(x,y,z,col,size,dur){const s=glow(col,.01,null,1);s.position.set(x,y,z);pops.push({s,size,dur:dur||.2,t:0})}
+function updPops(dt){for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.t+=dt;const u=p.t/p.dur;if(u>=1){scene.remove(p.s);pops.splice(i,1);continue}p.s.scale.setScalar(p.size*Math.sin(Math.PI*(.25+.75*u)))}}
+/* 命中停頓：真實時間 sec 秒內，遊戲時間只走 5% */
+let hitStopT=0;
+function hitStop(sec){hitStopT=Math.min(.2,Math.max(hitStopT,sec))}
+function updZaps(dt){for(let i=zaps.length-1;i>=0;i--){const z=zaps[i];z.t+=dt;const k=1-z.t/.2;if(k<=0){scene.remove(z.l);if(!z.spr){z.l.geometry.dispose();z.l.material.dispose()}zaps.splice(i,1);continue}if(!z.spr)z.l.material.opacity=k;else z.l.scale.setScalar((z.s||1.4)*k)}}
 // 地面效果（毒雲、幽影、冰霜）
 const puddles=[];
 function puddle(x,z,r,col,dur,o){const g=glow(col,r*2.2,null,.55);g.position.set(x,.25,z);const p=Object.assign({g,x,z,r,col,dur,t:0,tick:0},o||{});puddles.push(p);return p}
-function clearPuddles(){for(const p of puddles)scene.remove(p.g);puddles.length=0;for(const z of zaps)scene.remove(z.l);zaps.length=0}
+function clearPuddles(){for(const p of puddles)scene.remove(p.g);puddles.length=0;for(const z of zaps)scene.remove(z.l);zaps.length=0;for(const p of pops)scene.remove(p.s);pops.length=0;hitStopT=0}
 
 /* ================= 浮動文字、橫幅、提示 ================= */
 const floatBox=$('floats'),floats=[],V3=new T.Vector3();

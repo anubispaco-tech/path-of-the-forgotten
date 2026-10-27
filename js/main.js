@@ -30,11 +30,11 @@ const clock=new T.Clock();
 function step(dt){RUN.time+=dt;updTimers();updRun(dt);updPlayer(dt);updEnemies(dt);updAllies(dt);updBolts(dt);updEbolts(dt);updOrbs(dt);updLoot(dt);updTels(dt);updPuddles(dt);P.c.mixer.update(dt);for(const e of enemies)e.c.mixer.update(dt*(e.stunT>0?0:e.slowT>0?.6:1))}
 function frame(){requestAnimationFrame(frame);let dt=Math.min(.05,clock.getDelta());G.time+=dt;
   if(banT>0){banT-=dt;if(banT<=0)$('banner').classList.remove('on')}if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').classList.remove('on')}
-  if(G.mode==='run'&&RUN&&!G.paused)step(dt);
+  if(G.mode==='run'&&RUN&&!G.paused){if(hitStopT>0){hitStopT-=dt;step(dt*.05)}else step(dt)}
   else if(G.mode==='run'&&RUN&&RUN.state==='dead'){P.c.mixer.update(dt)}
   updWorld(dt);
   if(fxLightT>0){fxLightT-=dt;fxLight.intensity=Math.max(0,fxLight.intensity-dt*10)}
-  shake=Math.max(0,shake-dt*1.6);updParts(dt);updRings(dt);updZaps(dt);updMotes(dt,G.time);updFloats(dt);updCam(G.mode==='run'?Math.min(1,dt*6):1);
+  shake=Math.max(0,shake-dt*1.6);updParts(dt);updRings(dt);updZaps(dt);updPops(dt);updMotes(dt,G.time);updFloats(dt);updCam(G.mode==='run'?Math.min(1,dt*6):1);
   if(!window.__noRender)renderer.render(scene,camera)}
 
 /* ================= 啟動 ================= */

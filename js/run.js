@@ -31,7 +31,7 @@ function snapRun(){if(!RUN||RUN.ended)return;const s={id:RUN.stage.id,diff:RUN.d
   for(const k of['perks','curses','gold','shards','dust','crystals','kills','elites','time','cleared','rerolls','revived','phoenix','seed','rlv','xp','chest','ev','picks'])s[k]=RUN[k];SAVE.run=s;save()}
 
 /* ================= 房間 ================= */
-function enterRoom(n){RUN.roomN=n;RUN.wave=0;RUN.state='enter';RUN.waves=null;RUN.roomT=0;RUN.forced=false;clearCombat();const type=roomType(n),evId=type==='event'?RUN.ev[n]:null;RUN.type=type;
+function enterRoom(n){RUN.roomN=n;RUN.wave=0;RUN.waveQ=false;RUN.state='enter';RUN.waves=null;RUN.roomT=0;RUN.forced=false;clearCombat();const type=roomType(n),evId=type==='event'?RUN.ev[n]:null;RUN.type=type;
   buildRoom(RUN.stage.theme,RUN.seed+n*977,{boss:type==='boss',event:evId,elite:type==='elite'});room.g.visible=true;syncOrbs();
   P.x=0;P.z=HZ-2.2;P.yaw=Math.PI;P.c.root.position.set(P.x,0,P.z);P.c.root.rotation.y=P.yaw;P.queue.length=0;P.atkT=.4;placeAllies();syncAllies();
   if(RUN.base.runeSet.def>=4)P.shieldUp=true;
@@ -48,16 +48,24 @@ function genWaves(n,type){const st=RUN.stage,R=seeded(RUN.seed+n*131),df=RUN.dif
   const fill=b=>{const out={};let guard=0;while(b>.4&&guard++<40){const ok=pool.filter(([k])=>cost(k)<=b+.5);const k=ok.length?wpick(ok,R):pool.reduce((a,c)=>cost(c[0])<cost(a[0])?c:a)[0];out[k]=(out[k]||0)+1;b-=cost(k)}
     return Object.entries(out).map(([k,c])=>({k,n:c,aff:df.affix}))};
   if(type==='boss')return[[].concat(st.boss).map(k=>({k,n:1}))];
-  const budget=st.type==='mat'?3+n*.8:RL.roomBudget.base+RL.roomBudget.per*n;
-  if(type==='elite'){const ek=st.elite[Math.floor(R()*st.elite.length)];return[[{k:ek,n:1,elite:true}].concat(fill(budget*.45))]}
-  if(n>=8&&R()<.35)return[fill(budget*.62),fill(budget*.5)];
-  return[fill(budget)]}
-function spawnWave(){const w=RUN.waves&&RUN.waves[RUN.wave];if(!w)return;const spots=[];
-  for(const g of w)for(let i=0;i<g.n;i++){let x,z,tries=0;do{x=rnd(-HX+1.2,HX-1.2);z=rnd(-HZ+1.5,3);tries++}while(tries<60&&(Math.hypot(x-P.x,z-P.z)<6||blocked(x,z,.6)||spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<1.6)));
-    const d=D.ENEMIES[g.k];if(d.boss){const twin=w.filter(q=>D.ENEMIES[q.k].boss).length>1;x=twin?(spots.length?2.6:-2.6):0;z=-5}spots.push([x,z]);
-    const aff=g.elite?rollAffixes(RUN.diff.id==='n'?1:2):(g.aff&&Math.random()<g.aff?rollAffixes(1):[]);spawnEnemy(g.k,x,z,{elite:g.elite,aff})}}
-function waveCleared(){if(!RUN||!(RUN.state==='fight'||RUN.state==='ritual'))return;if(enemies.some(o=>!o.dead))return;
-  if(RUN.waves&&RUN.wave<RUN.waves.length-1){RUN.wave++;banner('下一波','敵人逼近','#ff8a4a');later(.9,()=>{if(RUN&&RUN.state==='fight')spawnWave()});return}
+  const budget=(st.type==='mat'?3+n*.8:RL.roomBudget.base+RL.roomBudget.per*n)*(df.count||1),W=RL.waves||{two:8,three:99},wp=df.waveP||.35;
+  if(type==='elite'){const ek=st.elite[Math.floor(R()*st.elite.length)];return[[{k:ek,n:1,elite:true}].concat(fill(budget*.45)),fill(budget*.4)]}
+  const nW=n>=W.three&&R()<wp*.6?3:n>=W.two&&R()<wp?2:1;if(nW===1)return[fill(budget)];
+  const per=budget*(1+.15*(nW-1))/nW,out=[];for(let i=0;i<nW;i++)out.push(fill(per));return out}
+function spawnWave(){RUN.waveQ=false;const w=RUN.waves&&RUN.waves[RUN.wave];if(!w)return;const spots=[];RUN.waveN=w.reduce((s,g)=>s+g.n,0);
+  const free=(minP,minS)=>{let x,z,tries=0;do{x=rnd(-HX+1.2,HX-1.2);z=rnd(-HZ+1.5,3);tries++}while(tries<60&&(Math.hypot(x-P.x,z-P.z)<minP||blocked(x,z,.6)||spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<minS)));return[x,z]};
+  for(const g of w){const d0=D.ENEMIES[g.k],pack=!g.elite&&!d0.boss&&d0.ai==='chase'&&g.n>=(RL.pack||99);const c=pack?free(6.5,2.2):null;
+   for(let i=0;i<g.n;i++){let x,z;
+    if(pack){let ok=false;for(let t=0;t<24&&!ok;t++){const a=rnd(0,TAU),r=rnd(.5,1.7);x=clamp(c[0]+Math.sin(a)*r,-HX+1,HX-1);z=clamp(c[1]+Math.cos(a)*r,-HZ+1.2,3.5);ok=!blocked(x,z,.5)&&!spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<.85)}if(!ok)[x,z]=free(6,1.6)}
+    else[x,z]=free(6,1.6);
+    const d=d0;if(d.boss){const twin=w.filter(q=>D.ENEMIES[q.k].boss).length>1;x=twin?(spots.length?2.6:-2.6):0;z=-5}spots.push([x,z]);
+    const aff=g.elite?rollAffixes(RUN.diff.id==='n'?1:2):(g.aff&&Math.random()<g.aff?rollAffixes(1):[]);spawnEnemy(g.k,x,z,{elite:g.elite,aff})}}}
+/* 這一波快清完時，下一波提前進場（節奏不斷檔） */
+function earlyWave(){if(!RUN||RUN.waveQ||!(RUN.state==='fight')||!RUN.waves||RUN.wave>=RUN.waves.length-1||!RL.waveEarly)return;
+  const alive=enemies.filter(o=>!o.dead&&!o.summoned).length;if(alive===0||alive>Math.max(1,Math.round((RUN.waveN||1)*RL.waveEarly)))return;
+  RUN.waveQ=true;RUN.wave++;banner('援軍','敵人從暗處湧出','#ff8a4a');later(.5,()=>{if(RUN&&RUN.state==='fight')spawnWave()})}
+function waveCleared(){if(!RUN||!(RUN.state==='fight'||RUN.state==='ritual'))return;if(enemies.some(o=>!o.dead))return;if(RUN.waveQ)return;
+  if(RUN.waves&&RUN.wave<RUN.waves.length-1){RUN.wave++;RUN.waveQ=true;banner('下一波','敵人逼近','#ff8a4a');later(.6,()=>{if(RUN&&RUN.state==='fight')spawnWave()});return}
   const wasRitual=RUN.state==='ritual';RUN.state='clear';for(const l of loot)l.mag=true;RUN.cleared++;track('room');
   if(RUN.type==='boss'||(RUN.stage.type==='mat'&&RUN.roomN===RUN.total)){later(.6,()=>{RUN.state='won';banner('副本完成',RUN.stage.name,'#e2b84d');once(P.c,'Cheer');later(2.2,()=>endRun(true))});return}
   if(wasRitual){const ok=RUN.ritT>0;$('hudTimer').hidden=true;if(ok){banner('儀式完成','選擇一項傳說技能','#c38cff');RUN.cq.push('legend')}else banner('儀式結束','時間到了，祭壇沉寂了','#8a8090')}
@@ -75,7 +83,7 @@ function updRun(dt){if(RUN.state==='fight'){RUN.roomT=(RUN.roomT||0)+dt;if(RUN.r
 
 /* ================= 局內經驗、升級 ================= */
 function gainXp(v,quiet){if(!RUN||RUN.ended)return;RUN.xp+=v;let up=0;while(RUN.xp>=RUN.need){RUN.xp-=RUN.need;RUN.rlv++;RUN.need=xpNeedRun(RUN.rlv);RUN.cq.push('lv');up++}
-  if(up){healP(Math.round(RUN.maxHp*.1*up),true)}
+  if(up){healP(Math.round(RUN.maxHp*.1*up*(RUN.diff.heal||1)),true)}
   if(up&&!quiet){floatTxt(P.x,2.8,P.z,'升級！','#9dff6a','big');ringFx(P.x,P.z,2.4,'#9dff6a',.5);emit(P.x,1,P.z,'#9dff6a',24,3,.7,{up:2});later(.35,processQueue)}updXp()}
 function processQueue(){if(!RUN||RUN.ended||RUN.choosing||RUN.state==='dead'||RUN.state==='won'||!$('pause').hidden)return;const k=RUN.cq.shift();if(!k)return;
   if(k==='lv')showChoice({kind:'lv',sub:`局內等級 Lv ${RUN.rlv}`,title:'升級！選擇一項技能'});
@@ -112,7 +120,7 @@ function applyPerk(id,silent){if(id==='heal'){healP(Math.round(RUN.maxHp*.4));re
 /* ================= 事件房 ================= */
 function priceM(){return 1+(RUN.lv-1)*.25}
 function openEvent(id){const ev=D.EVENTS.find(e=>e.id===id),box=()=>$('perkCards'),leave=(txt)=>h('button',{type:'button',cls:'btn ghost',on:{click:()=>{closeChoice();openDoor()}}},txt||'離開');
-  const heal=Math.round(RUN.maxHp*.5*(1+tal('t_heal')*.1));
+  const heal=Math.round(RUN.maxHp*.5*(1+tal('t_heal')*.1)*(RUN.diff.heal||1));
   if(id==='fire'){openChoice(ev.n,'在火邊稍作停留');
     box().append(h('button',{type:'button',cls:'pc',style:'--pc:#93d95e',on:{click:()=>{closeChoice();healP(heal);ringFx(P.x,P.z,3,'#93d95e',.6);openDoor()}}},h('div',{cls:'ic'},svg('heal')),h('b',null,'回復生命'),h('span',null,`回復 50% 最大生命`)),
       h('button',{type:'button',cls:'pc',style:'--pc:#c38cff',on:{click:()=>{showChoice({kind:'fire',sub:ev.n,title:'汲取營火的力量'});const done=()=>{if(RUN.choosing){later(.2,done);return}openDoor()};later(.2,done)}}},h('div',{cls:'ic'},svg('xp')),h('b',null,'汲取力量'),h('span',null,'從三項技能中選擇一項')));return}
