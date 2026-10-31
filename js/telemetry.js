@@ -4,7 +4,7 @@
  * 關閉遙測：把 TEL_URL 清空 */
 'use strict';
 const TEL_URL='https://script.google.com/macros/s/AKfycbxD2gvTSVyPAempBsjuVoj-ugKVlbDm8gBSXeC63r-Sgn9FQCN50O4LIEyGccix8lPhBQ/exec';
-const TEL_VER='0.6.0';
+const TEL_VER='0.6.1';
 const TEL={q:[],timer:0,ready:false};
 
 function telPid(){if(!SAVE.pid)SAVE.pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);return SAVE.pid}
@@ -58,7 +58,7 @@ addEventListener('load',()=>setTimeout(telBoot,500));
 
 // 主畫面 App 和 Safari 的存檔是分開的，網址參數帶不進去：在標題畫面連點標題 5 下切換開發者標記
 (()=>{let n=0,t=0;const logo=document.querySelector('#title .logo');if(!logo)return;
-  const mark=()=>{const el=document.querySelector('#title .hint');if(el&&SAVE)el.dataset.dev=SAVE.dev?'1':'';if(el&&SAVE){el.textContent=el.textContent.replace(/ · DEV$/,'')+(SAVE.dev?' · DEV':'')}};
+  const mark=()=>{const el=document.querySelector('#title .hint');if(el)el.textContent=el.textContent.replace(/v[0-9.]+/,'v'+TEL_VER);if(el&&SAVE)el.dataset.dev=SAVE.dev?'1':'';if(el&&SAVE){el.textContent=el.textContent.replace(/ · DEV$/,'')+(SAVE.dev?' · DEV':'')}};
   logo.addEventListener('click',()=>{const now=Date.now();n=now-t<800?n+1:1;t=now;if(n<5||!SAVE)return;n=0;
     SAVE.dev=!SAVE.dev;save();toast(SAVE.dev?'已標記為開發者存檔（不列入分析）':'已取消開發者標記');mark();tel('dev',{on:SAVE.dev});telFlush()});
   addEventListener('load',()=>setTimeout(mark,800))})();
