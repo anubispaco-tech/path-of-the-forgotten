@@ -19,7 +19,12 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+
 function tal(id){return SAVE.tal[id]||0}
 function unlocked(k){return SAVE.unl.includes(k)}
 function milestone(id){const m=D.MILESTONES.find(x=>x.id===id);return m&&SAVE.lvl>=m.lv}
-function talPoints(){let used=0;for(const k in SAVE.tal)used+=SAVE.tal[k];return SAVE.lvl-1-used}
+let TAL_MAX=0;function talMax(){if(!TAL_MAX)for(const tr of D.TALENTS)for(const n of tr.nodes)TAL_MAX+=n.max;return TAL_MAX}
+function talPoints(){let used=0;for(const k in SAVE.tal)used+=SAVE.tal[k];return Math.min(SAVE.lvl-1,talMax())-used}
+/* 巔峰：天賦總點數用完後（帳號 Lv 超過天賦總上限），每升一級得 1 巔峰點，屬性無上限 */
+const PARA=[{id:'atk',n:'亡魂之力',d:'攻擊',per:1,u:'%'},{id:'hp',n:'不朽骨架',d:'生命',per:1,u:'%'},{id:'critM',n:'碎魂',d:'爆擊傷害',per:2,u:'%'},{id:'gold',n:'掠奪',d:'金幣與骨片',per:2,u:'%'}];
+function paraTotal(){return Math.max(0,SAVE.lvl-1-talMax())}
+function paraPoints(){let used=0;for(const k in SAVE.para||{})used+=SAVE.para[k];return paraTotal()-used}
 function slotOpen(sl){const u=D.SLOTS[sl].unlock;return!u||unlocked(u)}
 
 /* ================= 數值 ================= */
@@ -41,6 +46,7 @@ function baseStats(){const s={atk:22,hp:220,aspd:1.15,crit:.05,critM:1.8,def:0,s
   s.atk*=1+pc.atk/100;s.hp*=1+pc.hp/100;s.elemM+=pc.elem/100;s.xpM+=pc.xp/100;
   s.atk*=1+tal('t_atk')*.05;s.crit+=tal('t_crit')*.02;s.aspd*=1+tal('t_spd')*.04;s.critM+=tal('t_critM')*.1;s.elemM+=tal('t_elem')*.06;
   s.hp*=1+tal('t_hp')*.07;def+=tal('t_def')*3;s.regen+=tal('t_regen')*.003;s.lootM+=tal('t_gold')*.1;s.goldM+=tal('t_gold')*.1;s.xpM+=tal('t_xp')*.06;s.sumM+=tal('t_minion')*.08;s.magnet+=tal('t_magnet')*.2;
+  const pa=SAVE.para||{};s.atk*=1+(pa.atk||0)*.01;s.hp*=1+(pa.hp||0)*.01;s.critM+=(pa.critM||0)*.02;s.goldM+=(pa.gold||0)*.02;s.lootM+=(pa.gold||0)*.02;
   if(milestone('ms_xp'))s.xpM+=.15;if(s.fx.has('fx_gold'))s.goldM+=.3;
   s.rerolls=tal('t_roll')+(milestone('ms_roll')?1:0)+(rs.arc>=4?1:0)+(s.fx.has('fx_reroll')?1:0);
   s.def=Math.min(.6,def/100);s.atk=Math.round(s.atk);s.hp=Math.round(s.hp);return s}
@@ -52,6 +58,17 @@ function genGear(lv,slot,minR,o){o=o||{};const slots=Object.keys(D.SLOTS).filter
   const list=D.GEAR[slot],b=Math.floor(Math.random()*list.length);const it={id:SAVE.uid++,slot,r,lv:Math.max(1,lv),up:0,base:b,n:list[b].n,sock:Array(D.RARITY[r].sock).fill(null)};if(D.RARITY[r].fx)it.fx=pick(D.GEAR_FX).id;return it}
 function addGear(it){SAVE.inv.push(it);if(it.r>=5)ach('myth')}
 const upCost=it=>({gold:Math.round(25*(it.up+1)*D.RARITY[it.r].m*(1+it.lv*.15)),sh:2+it.up*2});
+// 一鍵強化：每次挑「強化等級最低（同級挑最便宜）」的已裝備裝備 +1，直到錢不夠或全部到上限
+function autoUpPlan(){let gold=SAVE.gold,sh=SAVE.shards;const items=equipped().map(it=>({it,up:it.up,from:it.up,cap:D.RARITY[it.r].cap}));let n=0;
+  for(let guard=0;guard<500;guard++){const c=items.filter(x=>x.up<x.cap).map(x=>({x,c:upCost(Object.assign({},x.it,{up:x.up}))})).sort((a,b)=>a.x.up-b.x.up||a.c.gold-b.c.gold);
+    const pick=c.find(o=>o.c.gold<=gold&&o.c.sh<=sh);if(!pick)break;gold-=pick.c.gold;sh-=pick.c.sh;pick.x.up++;n++}
+  return{n,gold:SAVE.gold-gold,sh:SAVE.shards-sh,items:items.filter(x=>x.up>x.from)}}
+function autoUpModal(){const p=autoUpPlan();if(!p.n){toast('金幣或骨片不足，或裝備都已達強化上限');return}
+  showModal(h('div',{cls:'resHead'},h('small',null,'一鍵強化'),h('h2',null,`強化 ${p.n} 次`)),
+    h('div',{cls:'resLoot'},...p.items.map(x=>h('div',{cls:'loot'},svg(D.SLOTS[x.it.slot].icon),h('span',null,x.it.n),h('b',null,`+${x.from} → +${x.up}`)))),
+    h('div',{cls:'lkNote'},h('p',null,`花費：金幣 ${fmt(p.gold)}、骨片 ${fmt(p.sh)}（剩 ${fmt(SAVE.gold-p.gold)} / ${fmt(SAVE.shards-p.sh)}）`),h('p',null,'優先強化等級最低的裝備，讓 5 件平均成長。')),
+    h('div',{cls:'row'},h('button',{type:'button',cls:'btn ghost',on:{click:closeModal}},'取消'),h('button',{type:'button',cls:'btn gold',on:{click:()=>{
+      for(const x of p.items){track('up',x.up-x.it.up);x.it.up=x.up}SAVE.gold-=p.gold;SAVE.shards-=p.sh;save();tel('autoup',{n:p.n,gold:p.gold,sh:p.sh});closeModal();renderHub();toast(`強化完成：共 ${p.n} 次`)}}},'確認強化')))}
 function mergeGroups(){const g={};for(const it of SAVE.inv){if(it.r>=5)continue;const k=it.slot+'|'+it.base+'|'+it.r;(g[k]=g[k]||[]).push(it)}return Object.values(g).filter(a=>a.length>=3)}
 function mergeOne(list){const eqIds=Object.values(SAVE.eq);list=list.slice().sort((a,b)=>(eqIds.includes(b.id)?1:0)-(eqIds.includes(a.id)?1:0)||b.up-a.up||b.lv-a.lv);const[base,...rest]=list.slice(0,3);
   let refund=0;for(const x of rest){refund+=x.up*2;for(const r of x.sock||[])if(r)SAVE.runes.push(r);SAVE.inv=SAVE.inv.filter(i=>i!==x)}
@@ -104,7 +121,7 @@ function rebuildHero(){if(hubChar){const p=hubChar.root.position.clone(),ry=hubC
   if(P.c&&!RUN){disposeChar(P.c);P.c=null}}
 
 /* ================= 營地介面 ================= */
-function setDots(){if(!SAVE||!$('hub'))return;$('talDot').hidden=talPoints()<=0;$('questDot').hidden=claimable()<=0;$('gearDot').hidden=!mergeGroups().length}
+function setDots(){if(!SAVE||!$('hub'))return;$('talDot').hidden=talPoints()<=0&&paraPoints()<=0;$('questDot').hidden=claimable()<=0;$('gearDot').hidden=!mergeGroups().length}
 function renderHub(){ensureDaily();$('hLv').textContent=SAVE.lvl;const need=xpNeed(SAVE.lvl);$('hXp').style.width=(SAVE.xp/need*100)+'%';$('hXpT').textContent=`${SAVE.xp} / ${need}`;
   $('hGold').textContent=fmt(SAVE.gold);$('hShard').textContent=fmt(SAVE.shards);$('hCrys').textContent=fmt(SAVE.crystals);setDots();
   const tab=document.querySelector('.hubNav .on').dataset.tab;({tabStage:renderStages,tabTal:renderTal,tabGear:renderGear,tabLook:renderLook,tabGacha:renderGacha,tabQuest:renderQuests})[tab]()}
@@ -149,7 +166,7 @@ let gearView='gear',gearFilter='all';
 function renderGear(){const box=$('tabGear');box.replaceChildren();const runesOn=unlocked('sys:runes');
   if(runesOn)box.append(h('div',{cls:'seg subSeg'},h('button',{type:'button',cls:gearView==='gear'?'on':'',on:{click:()=>{gearView='gear';renderGear()}}},'裝備'),h('button',{type:'button',cls:gearView==='rune'?'on':'',on:{click:()=>{gearView='rune';renderGear()}}},'符文')));
   if(gearView==='rune'&&runesOn){renderRunes(box);return}
-  box.append(title('已裝備','點選查看、強化、鑲嵌符文'));
+  box.append(h('div',{cls:'tabTitle'},h('h3',null,'已裝備'),h('small',null,'點選查看、強化、鑲嵌符文'),h('button',{type:'button',cls:'btn gold sm',on:{click:autoUpModal}},'一鍵強化')));
   const row=h('div',{cls:'eqRow five'});for(const sl in D.SLOTS){const open=slotOpen(sl),it=open&&SAVE.inv.find(i=>i.id===SAVE.eq[sl]),r=it?D.RARITY[it.r]:null;
     row.append(h('button',{type:'button',cls:'slot'+(open?'':' lock'),style:it?'--rc:'+r.col:'',on:{click:()=>{if(!open){toast('首次通關第二章解鎖項鍊欄');return}it?itemModal(it):(gearFilter=sl,renderGear())}}},h('small',null,D.SLOTS[sl].n),svg(open?D.SLOTS[sl].icon:'lock','gi'),h('b',null,it?it.n+(it.up?' +'+it.up:''):open?'空':'未解鎖'),it?h('span',null,statLine(gearStats(it))[0]):null))}
   box.append(row);const s=baseStats();
@@ -220,7 +237,12 @@ function renderTal(){const box=$('tabTal');box.replaceChildren();const pts=talPo
     tr.nodes.forEach(n=>{const r=tal(n.id),max=r>=n.max,can=pts>0&&!max;col.append(h('div',{cls:'tal'+(max?' max':'')},h('b',null,n.n),h('span',null,n.d),h('div',{cls:'pips'},Array.from({length:n.max},(_,i)=>h('i',{cls:i<r?'on':''}))),
       h('button',{type:'button',cls:can?'can':'',disabled:!can,on:{click:()=>{SAVE.tal[n.id]=r+1;save();renderHub()}}},max?'已滿':'升級')))});cols.append(col)});box.append(cols);
   box.append(title('里程碑','帳號等級到達時自動取得'),h('div',{cls:'mss'},...D.MILESTONES.map(m=>h('div',{cls:'ms'+(SAVE.lvl>=m.lv?' on':'')},h('b',null,'Lv '+m.lv),h('div',null,h('strong',null,m.n),h('span',null,m.d))))));
-  const used=SAVE.lvl-1-pts;box.append(h('div',{cls:'row'},h('button',{type:'button',cls:'btn ghost',disabled:!used,on:{click:()=>{SAVE.tal={};save();renderHub();toast('天賦已重置')}}},'重置天賦（免費）')))}
+  const pp=paraPoints(),pa=SAVE.para||{};
+  box.append(title('巔峰',paraTotal()?'天賦點滿後，每升一級 +1 巔峰點，沒有上限':`帳號 Lv ${talMax()+1} 解鎖（天賦全部點滿之後）`));
+  if(paraTotal()){box.append(h('div',{cls:'ptsBox'},h('span',null,'可用巔峰點'),h('b',null,pp)));
+    box.append(h('div',{cls:'paraList'},...PARA.map(o=>{const v=pa[o.id]||0,add=k=>{const n=Math.min(k,paraPoints());if(n<=0)return;SAVE.para=Object.assign({},SAVE.para||{},{[o.id]:v+n});save();renderHub()};
+      return h('div',{cls:'para'},h('div',null,h('b',null,o.n),h('span',null,`${o.d} +${o.per}${o.u} / 點　目前 +${v*o.per}${o.u}`)),h('button',{type:'button',disabled:pp<=0,on:{click:()=>add(1)}},'+1'),h('button',{type:'button',disabled:pp<=0,on:{click:()=>add(10)}},'+10'))})))}
+  const used=Math.min(SAVE.lvl-1,talMax())-pts;box.append(h('div',{cls:'row'},h('button',{type:'button',cls:'btn ghost',disabled:!used&&!Object.keys(SAVE.para||{}).length,on:{click:()=>{SAVE.tal={};SAVE.para={};save();renderHub();toast('天賦與巔峰已重置')}}},'重置天賦與巔峰（免費）')))}
 
 /* ---------- 外觀 ---------- */
 function setLook(k,v){SAVE.look=Object.assign({},LK.def,SAVE.look||{},{[k]:v});save();rebuildHero();if(hubChar&&Math.random()<.5)once(hubChar,'Cheer',1.6);renderLook()}

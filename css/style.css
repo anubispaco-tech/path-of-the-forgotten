@@ -381,3 +381,9 @@ svg{fill:currentColor}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 #safeProbe{position:fixed;top:0;left:0;width:0;height:var(--st);visibility:hidden;pointer-events:none}
+.tabTitle .btn.sm{margin-left:auto}
+.paraList{display:flex;flex-direction:column;gap:6px}
+.para{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;background:#000a;box-shadow:0 0 0 1px var(--line)}
+.para>div{flex:1;min-width:0}.para b{display:block;font-family:var(--fd);font-size:14px;color:var(--gold)}.para span{font-size:11px;color:var(--mute)}
+.para button{min-width:42px;padding:7px 0;border-radius:6px;border:0;font-weight:900;font-size:12px;background:#000;color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.para button:disabled{color:var(--dim);box-shadow:0 0 0 1px var(--line)}
