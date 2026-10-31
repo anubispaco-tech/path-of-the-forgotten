@@ -160,7 +160,7 @@ function endRun(win){if(!RUN||RUN.ended)return;RUN.ended=true;G.paused=true;$('p
   const runes=[];if(win&&rw.rune)for(let i=0;i<rw.rune;i++)runes.push(genRune(wpick([[1,60],[2,30],[3,10]])));
   if(win)SAVE.clear[key]=(SAVE.clear[key]||0)+1;SAVE.gold+=gold;SAVE.shards+=shards;SAVE.dust+=dust;SAVE.crystals+=crystals;for(const g of gear)addGear(g);for(const r of runes)SAVE.runes.push(r);
   SAVE.kills=(SAVE.kills||0)+RUN.kills;SAVE.run=null;
-  tel('run_end',{win,quit:!!RUN.quit,first,done,total,t:Math.round(RUN.time),kills:RUN.kills,elites:RUN.elites,rlv:RUN.rlv,picks:RUN.picks,perks:telPerks(),streak:RUN.bestStreak||0,curses:RUN.curses.join(' '),xp,gold,gear:gear.length,by:RUN.lastBy||''});
+  tel('run_end',{win,quit:!!RUN.quit,first,done,total,t:Math.round(RUN.time),kills:RUN.kills,elites:RUN.elites,rlv:RUN.rlv,picks:RUN.picks,perks:telPerks(),streak:RUN.bestStreak||0,au:typeof SFX!=='undefined'&&SFX.ctx?SFX.ctx.state:'none',curses:RUN.curses.join(' '),xp,gold,gear:gear.length,by:RUN.lastBy||''});
   const unl=[];if(firstN&&st.first)for(const u of st.first.unlock){if(!SAVE.unl.includes(u)){SAVE.unl.push(u);unl.push(u)}if(u.startsWith('act:')&&(SAVE.actEq||[]).length<(unlocked('slot:act2')?2:1)){SAVE.actEq=(SAVE.actEq||[]).concat(u.slice(4))}}
   const lv0=SAVE.lvl;SAVE.xp+=xp;while(SAVE.xp>=xpNeed(SAVE.lvl)){SAVE.xp-=xpNeed(SAVE.lvl);SAVE.lvl++}
   if(win&&st.type==='main'){track('main');ach('clear:'+st.id);if(df.id!=='n')ach('diff:h');const cnt={};for(const id in RUN.perks){const p=D.PERKS.find(x=>x.id===id);if(p&&p.sch!=='gen')cnt[p.sch]=(cnt[p.sch]||0)+1}for(const s in cnt)if(cnt[s]>=4)ach('school:'+s)}

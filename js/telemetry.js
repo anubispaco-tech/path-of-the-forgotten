@@ -4,7 +4,7 @@
  * 關閉遙測：把 TEL_URL 清空 */
 'use strict';
 const TEL_URL='https://script.google.com/macros/s/AKfycbxD2gvTSVyPAempBsjuVoj-ugKVlbDm8gBSXeC63r-Sgn9FQCN50O4LIEyGccix8lPhBQ/exec';
-const TEL_VER='0.6.1';
+const TEL_VER='0.6.2';
 const TEL={q:[],timer:0,ready:false};
 
 function telPid(){if(!SAVE.pid)SAVE.pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);return SAVE.pid}
@@ -45,7 +45,7 @@ function telBoot(){if(!SAVE||TEL.ready)return;TEL.ready=true;
       tal:talS,gear,inv:SAVE.inv.length,runes:SAVE.runes.length,pity:[SAVE.pity.soul,SAVE.pity.soulL,SAVE.pity.rune].join('/'),
       ach:Object.keys(SAVE.ach||{}).length,unl:(SAVE.unl||[]).length,new:!SAVE.runs})}
   save();
-  tel('open',{touch:typeof isTouch!=='undefined'&&!!isTouch,pwa:matchMedia('(display-mode: standalone)').matches,w:innerWidth,h:innerHeight});
+  tel('open',{sfx:SAVE.sfx!==false,as:!!navigator.audioSession,touch:typeof isTouch!=='undefined'&&!!isTouch,pwa:matchMedia('(display-mode: standalone)').matches,w:innerWidth,h:innerHeight});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){if(RUN&&!RUN.ended)tel('bg',{rlv:RUN.rlv});telFlush()}});
   addEventListener('pagehide',telFlush)}
 

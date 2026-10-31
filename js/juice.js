@@ -13,8 +13,13 @@ function sfxInit(){if(SFX.ctx)return SFX.ctx;const AC=window.AudioContext||windo
     const len=c.sampleRate*1,buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;SFX.noise=buf}catch(e){SFX.ctx=null}
   return SFX.ctx}
 // iOS／Chrome 需要使用者手勢才能出聲
-['pointerdown','keydown','touchend'].forEach(ev=>addEventListener(ev,()=>{const c=sfxInit();if(c&&c.state==='suspended')c.resume()},{passive:true}));
-document.addEventListener('visibilitychange',()=>{if(!SFX.ctx)return;if(document.hidden)SFX.ctx.suspend();else SFX.ctx.resume()});
+// iPhone：audioSession 設成 playback，靜音開關打開也照樣有聲音（iOS 16.4+）
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+// 解鎖：在使用者手勢裡 resume，並播一段無聲緩衝（舊版 iOS 需要）；iOS 切回 App 時狀態會是 interrupted，不只 suspended
+function sfxUnlock(){const c=sfxInit();if(!c)return;if(c.state!=='running'){try{c.resume()}catch(e){}}
+  if(!SFX.unlocked){try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);SFX.unlocked=true}catch(e){}}}
+['pointerdown','touchstart','touchend','keydown','click'].forEach(ev=>addEventListener(ev,sfxUnlock,{passive:true,capture:true}));
+document.addEventListener('visibilitychange',()=>{if(!SFX.ctx)return;if(document.hidden){try{SFX.ctx.suspend()}catch(e){}}else{try{SFX.ctx.resume()}catch(e){}}});
 
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
 function tone(type,f0,f1,dur,vol,t){const c=SFX.ctx,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1)o.frequency.exponentialRampToValueAtTime(f1,t+dur);env(g,t,.004,vol,dur);o.connect(g);g.connect(SFX.out);o.start(t);o.stop(t+dur+.05)}
@@ -35,7 +40,7 @@ const SOUNDS={
 };
 // 節流：同一種聲音最短間隔（秒）；音高隨機微調避免機械感
 const SFX_GAP={hit:.035,crit:.05,kill:.04,coin:.03,xp:.04,boom:.06,hurt:.12,shard:.05};
-function sfx(name,k){if(!sfxOn()||!SFX.ctx||SFX.ctx.state!=='running')return;const t=SFX.ctx.currentTime,gap=SFX_GAP[name]||0;
+function sfx(name,k){if(!sfxOn()||!SFX.ctx)return;if(SFX.ctx.state!=='running'){try{SFX.ctx.resume()}catch(e){}if(SFX.ctx.state!=='running')return}const t=SFX.ctx.currentTime,gap=SFX_GAP[name]||0;
   if(gap&&t-(SFX.last[name]||0)<gap)return;SFX.last[name]=t;try{SOUNDS[name](t+.005,k||(.9+Math.random()*.2))}catch(e){}}
 
 /* ================= 2. 擊飛與碎骨 ================= */

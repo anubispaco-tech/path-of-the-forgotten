@@ -1,5 +1,5 @@
 /* 離線快取：模型與函式庫優先用快取（秒開），網頁與程式優先抓最新版（改版立即生效） */
-const CACHE='pof-v0.6.1';
+const CACHE='pof-v0.6.2';
 const CORE=['./','index.html','css/style.css','data/rules.js','data/enemies.js','data/stages.js','data/skills.js','data/gear.js','data/meta.js','js/engine.js','js/world.js','js/combat.js','js/run.js','js/meta.js','js/main.js','js/telemetry.js','js/juice.js','lib/three.min.js','lib/GLTFLoader.js','lib/SkeletonUtils.js','manifest.webmanifest','icons/icon.svg','icons/icon-180.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
