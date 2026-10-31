@@ -142,23 +142,22 @@ function renderStages(){const box=$('tabStage');box.replaceChildren();
   if(acts.length){const slots=unlocked('slot:act2')?2:1;SAVE.actEq=(SAVE.actEq||[]).filter(id=>acts.some(a=>a.id===id)).slice(0,slots);
     box.append(title('主動技',`帶 ${slots} 個進副本 · 右下角按鈕施放`),h('div',{cls:'acts'},...acts.map(a=>{const on=SAVE.actEq.includes(a.id);return h('button',{type:'button',cls:'actc'+(on?' on':''),style:'--ac:'+a.col,on:{click:()=>{let L=SAVE.actEq.filter(x=>x!==a.id);if(!on){L.push(a.id);if(L.length>slots)L.shift()}SAVE.actEq=L;save();renderStages()}}},svg(a.icon),h('b',null,a.n),h('span',null,a.d+`（冷卻 ${a.cd} 秒）`))})))}
   if(PIX.base)box.append(h('div',{cls:'qrow',style:'margin-top:6px'},h('span',null,'角色風格'),h('div',{cls:'seg styleSeg'},h('button',{type:'button','data-s':'model'},'3D 模型'),h('button',{type:'button','data-s':'pixel'},'像素（彩蛋）'))));
-  box.append(title('主線','30 間房 · 第 5、15、25 間事件 · 第 10、20 間菁英'));
-  for(const st of D.STAGES.filter(s=>s.type==='main')){const lock=st.req&&!SAVE.clear[st.req],cl=SAVE.clear[st.id],c=D.THEMES[st.theme].card;
+  renderWorld(box);
+  syncStyleSeg()}
+function stageCardMain(st,re){re=re||renderStages;const lock=st.req&&!SAVE.clear[st.req],cl=SAVE.clear[st.id],c=D.THEMES[st.theme].card;
     const dOk=d=>d.id==='n'||(d.id==='h'&&SAVE.clear[st.id])||(d.id==='x'&&SAVE.clear[st.id+':h']&&unlocked('diff:x'));const sel=(SAVE.diffSel||{})[st.id]||'n';const df=D.DIFFS.find(d=>d.id===sel&&dOk(d))||D.DIFFS[0];
     const boss=[].concat(st.boss).map(k=>D.ENEMIES[k].n.split(' · ')[0]).join(' & ');
-    box.append(h('div',{cls:'stg'+(lock?' lock':''),style:`--c1:${c[0]};--c2:${c[1]};--acc:${c[2]}`},cl?h('div',{cls:'clr'},'✓ 已通關'+(cl>1?' ×'+cl:'')+(SAVE.clear[st.id+':h']?' · 困難':'')+(SAVE.clear[st.id+':x']?' · 地獄':'')):null,
+    return(h('div',{cls:'stg'+(lock?' lock':''),style:`--c1:${c[0]};--c2:${c[1]};--acc:${c[2]}`},cl?h('div',{cls:'clr'},'✓ 已通關'+(cl>1?' ×'+cl:'')+(SAVE.clear[st.id+':h']?' · 困難':'')+(SAVE.clear[st.id+':x']?' · 地獄':'')):null,
       h('div',{cls:'ch'},st.ch+` · 建議等級 ${st.lv}`),h('h4',null,st.name),h('p',null,lock?'需要先通關「'+D.STAGES.find(s=>s.id===st.req).name+'」':st.desc),
       lock?null:h('div',{cls:'meta'},h('span',null,h('b',null,D.RULES.rooms),' 間'),h('span',null,'首領 ',h('b',null,boss)),h('span',null,'裝備 ×',h('b',null,st.reward.gear))),
-      lock?null:h('div',{cls:'seg diffSeg'},...D.DIFFS.map(d=>h('button',{type:'button',cls:(d===df?'on':'')+(dOk(d)?'':' lk'),disabled:!dOk(d),style:'--dc:'+d.col,on:{click:()=>{SAVE.diffSel=Object.assign(SAVE.diffSel||{},{[st.id]:d.id});save();renderStages()}}},d.n))),
+      lock?null:h('div',{cls:'seg diffSeg'},...D.DIFFS.map(d=>h('button',{type:'button',cls:(d===df?'on':'')+(dOk(d)?'':' lk'),disabled:!dOk(d),style:'--dc:'+d.col,on:{click:()=>{SAVE.diffSel=Object.assign(SAVE.diffSel||{},{[st.id]:d.id});save();re()}}},d.n))),
       lock||df.id==='n'?null:h('div',{cls:'dnote'},`怪物生命 ×${df.hp}、傷害 ×${df.dmg}，獎勵 ×${df.loot}`+(df.mythic?'，可能掉落神話裝備':'')),
       h('button',{type:'button',cls:'btn '+(lock?'':'pri'),disabled:lock,on:{click:()=>dropThen(()=>startRun(st.id,{diff:df.id}))}},lock?'鎖定':'出征')))}
-  box.append(title('素材','每個素材關每天 '+D.RULES.matDaily+' 次（挑戰或掃蕩）'));
-  for(const st of D.STAGES.filter(s=>s.type==='mat')){const lock=st.req&&!SAVE.clear[st.req],c=D.THEMES[st.theme].card,left=matLeft(st);const lootN={shards:'骨片',gold:'金幣',dust:'符文粉塵',crystals:'魂晶'}[st.loot];
-    box.append(h('div',{cls:'stg mat'+(lock?' lock':''),style:`--c1:${c[0]};--c2:${c[1]};--acc:${c[2]}`},h('div',{cls:'ch'},`素材 · 今日剩 ${left} / ${D.RULES.matDaily} 次`),h('h4',null,st.name),h('p',null,lock?'需要先通關「'+D.STAGES.find(s=>s.id===st.req).name+'」':st.desc),
+function stageCardMat(st,re){re=re||renderStages;const lock=st.req&&!SAVE.clear[st.req],c=D.THEMES[st.theme].card,left=matLeft(st);const lootN={shards:'骨片',gold:'金幣',dust:'符文粉塵',crystals:'魂晶'}[st.loot];
+    return(h('div',{cls:'stg mat'+(lock?' lock':''),style:`--c1:${c[0]};--c2:${c[1]};--acc:${c[2]}`},h('div',{cls:'ch'},`素材 · 今日剩 ${left} / ${D.RULES.matDaily} 次`),h('h4',null,st.name),h('p',null,lock?'需要先通關「'+D.STAGES.find(s=>s.id===st.req).name+'」':st.desc),
       lock?null:h('div',{cls:'meta'},h('span',null,h('b',null,D.RULES.matRooms),' 間'),h('span',null,'主要掉落 ',h('b',null,lootN))),
       h('div',{cls:'row'},h('button',{type:'button',cls:'btn ghost',disabled:lock||!SAVE.clear[st.id]||left<=0,on:{click:()=>sweep(st)}},SAVE.clear[st.id]?'掃蕩':'通關後可掃蕩'),
         h('button',{type:'button',cls:'btn '+(lock?'':'pri'),disabled:lock||left<=0,on:{click:()=>dropThen(()=>startRun(st.id))}},lock?'鎖定':left<=0?'明天再來':'出征'))))}
-  syncStyleSeg()}
 function dropThen(fn){if(!SAVE.run){fn();return}showModal(h('div',{cls:'resHead'},h('h2',null,'放棄進行中的副本？')),h('p',{cls:'lkNote'},'開始新的一局會放棄目前這一局，裡面的收穫不會保留。'),h('div',{cls:'row'},h('button',{type:'button',cls:'btn ghost',on:{click:closeModal}},'取消'),h('button',{type:'button',cls:'btn pri',on:{click:()=>{SAVE.run=null;save();closeModal();fn()}}},'放棄並出征')))}
 
 /* ---------- 裝備、符文 ---------- */

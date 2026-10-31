@@ -393,3 +393,36 @@ svg{fill:currentColor}
 #streak small{font-size:11px;letter-spacing:.3em;color:var(--sc);text-shadow:0 1px 0 #000}
 #streak.pop b{animation:stkPop .18s ease-out}
 @keyframes stkPop{0%{transform:scale(1.45)}100%{transform:scale(1)}}
+/* 世界地圖 */
+.worldWrap{position:relative;margin:0 -4px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 10px 30px #0008}
+.worldMap{display:block;width:100%;height:auto;touch-action:manipulation}
+.wmNode{cursor:pointer;outline:none}.wmNode:active{transform-box:fill-box}
+.wmNode.lock{cursor:default}
+.wmLabel{font-family:var(--fd);font-weight:900;paint-order:stroke;stroke:#0b0a0e;stroke-width:.9px;letter-spacing:.04em}
+.wmPulse{animation:wmPulse 2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes wmPulse{0%,100%{opacity:.25;transform:scale(.9)}50%{opacity:1;transform:scale(1.12)}}
+.wmMark{animation:wmBob 1.2s ease-in-out infinite}
+@keyframes wmBob{0%,100%{transform:translate(var(--mx,0),0)}50%{transform:translate(var(--mx,0),-1px)}}
+/* NPC 與任務 */
+.npcFace{display:block;flex:none!important;width:calc(16px * var(--k,3));height:calc(28px * var(--k,3));background:url(../assets/pixel/dungeon_tileset_ii.png) no-repeat;background-size:calc(512px * var(--k,3)) calc(512px * var(--k,3));image-rendering:pixelated;filter:drop-shadow(0 0 6px var(--nc,#e2b84d))}
+.npcHead{display:flex;align-items:flex-end;gap:14px;margin-bottom:6px}
+.npcHead small{font-size:11px;letter-spacing:.2em;color:var(--mute)}
+.npcHead h2{margin:2px 0 0;font-family:var(--fd);font-weight:900;font-size:24px;letter-spacing:.08em}
+.npcSay{margin:10px 0;padding:12px 14px;border-radius:10px;background:#000a;box-shadow:0 0 0 1px var(--line);font-size:14px;line-height:1.7;color:#efe6d0}
+.qTitle{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px}
+.qTitle b{font-family:var(--fd);font-size:17px;color:var(--gold)}.qTitle span{font-size:11px;color:var(--mute)}
+.qGoal{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute)}
+.qDone{text-align:center;color:#8fe36a;font-size:13px;margin:8px 0}
+.rws{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rw{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:12px;background:#000a;box-shadow:0 0 0 1px var(--line);font-size:11px;color:#efe6d0}
+.rw svg{width:13px;height:13px;fill:currentColor;color:var(--gold)}
+.qMini{display:flex;flex-direction:column;gap:6px}
+.qm{display:flex;align-items:center;gap:10px;padding:6px 10px;border:0;border-radius:10px;background:#000a;box-shadow:0 0 0 1px var(--line);color:inherit;text-align:left;font:inherit}
+.qm>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.qm b{font-family:var(--fd);font-size:14px}.qm span{font-size:11px;color:var(--mute)}
+.qm em{font-style:normal;font-size:12px;font-weight:900;color:#1a1206;background:var(--gold);border-radius:10px;padding:2px 8px}.qm em:empty{display:none}
+.qm.ready{box-shadow:0 0 0 1px var(--gold),0 0 14px #e2b84d44}
+.npcBtn{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:8px 12px;border:0;border-radius:12px;background:#000a;box-shadow:0 0 0 1px var(--line);color:inherit;text-align:left;font:inherit}
+.npcBtn>div{flex:1}.npcBtn small{display:block;font-size:10px;letter-spacing:.2em;color:var(--mute)}.npcBtn b{display:block;font-family:var(--fd);font-size:15px}.npcBtn span{font-size:12px;color:var(--mute)}
+.npcBtn em{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:var(--gold);color:#1a1206}
+.npcBtn.ready{box-shadow:0 0 0 1px var(--gold),0 0 16px #e2b84d55}
+.regionBox .stg{margin:0}
