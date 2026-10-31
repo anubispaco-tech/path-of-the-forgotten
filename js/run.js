@@ -33,6 +33,7 @@ function snapRun(){if(!RUN||RUN.ended)return;const s={id:RUN.stage.id,diff:RUN.d
 
 /* ================= 房間 ================= */
 function enterRoom(n){RUN.roomN=n;RUN.wave=0;RUN.waveQ=false;RUN.state='enter';RUN.waves=null;RUN.roomT=0;RUN.forced=false;clearCombat();const type=roomType(n),evId=type==='event'?RUN.ev[n]:null;RUN.type=type;
+  fitRoomDepth();
   buildRoom(RUN.stage.theme,RUN.seed+n*977,{boss:type==='boss',event:evId,elite:type==='elite'});room.g.visible=true;syncOrbs();
   P.x=0;P.z=HZ-2.2;P.yaw=Math.PI;P.c.root.position.set(P.x,0,P.z);P.c.root.rotation.y=P.yaw;P.queue.length=0;P.atkT=.4;placeAllies();syncAllies();
   if(RUN.base.runeSet.def>=4)P.shieldUp=true;
@@ -41,23 +42,26 @@ function enterRoom(n){RUN.roomN=n;RUN.wave=0;RUN.waveQ=false;RUN.state='enter';R
   $('hudFloor').textContent=`第 ${n} / ${RUN.total} 間`+(lab?' · '+lab:'');$('hudFloor').className=type;
   const th=D.THEMES[RUN.stage.theme];
   if(type==='event'){const ev=D.EVENTS.find(e=>e.id===evId);return fadeTo(false).then(()=>{banner(ev.n,ev.d,ev.col);later(.5,()=>{if(RUN&&RUN.roomN===n&&RUN.state==='enter'){RUN.state='event';processQueue()}})})}
-  RUN.waves=genWaves(n,type);
+  RUN.cm=type==='boss'?1:crowdMul();RUN.waves=genWaves(n,type);
   return fadeTo(false).then(()=>{if(type==='boss'){const b=[].concat(RUN.stage.boss).map(k=>D.ENEMIES[k].n).join(' & ');banner('首領之間',b,'#ff8a4a')}else if(type==='elite')banner('菁英之間','擊敗菁英，獲得稀有以上技能','#ffd04a');else if(n===1)banner(RUN.stage.name,RUN.stage.ch,th.torch);
     later(type==='boss'?1.3:type==='elite'?1:.45,()=>{if(RUN&&RUN.roomN===n&&RUN.state==='enter'){RUN.state='fight';spawnWave();later(.5,processQueue)}})})}
+// 怪物數量倍率：章節越後面越多（RL.chapterCrowd），房間越深越多（RL.depthCrowd）
+function chapterIdx(st){const main=D.STAGES.filter(s=>s.type==='main');const i=main.indexOf(st);if(i>=0)return i;return Math.max(0,main.filter(s=>s.lv<=st.lv).length-1)}
+function crowdMul(){const C=RL.crowd||{};return(1+(C.chapter||0)*chapterIdx(RUN.stage))*Math.pow(RD/D.RULES.roomDepth.min,C.depth||0)}
 function genWaves(n,type){const st=RUN.stage,R=seeded(RUN.seed+n*131),df=RUN.diff;
   const pool=(st.pool||[]).concat(n>=12||st.type==='mat'?st.late||[]:[]);const cost=k=>D.ENEMIES[k].cost||1;
   const fill=b=>{const out={};let guard=0;while(b>.4&&guard++<40){const ok=pool.filter(([k])=>cost(k)<=b+.5);const k=ok.length?wpick(ok,R):pool.reduce((a,c)=>cost(c[0])<cost(a[0])?c:a)[0];out[k]=(out[k]||0)+1;b-=cost(k)}
     return Object.entries(out).map(([k,c])=>({k,n:c,aff:df.affix}))};
   if(type==='boss')return[[].concat(st.boss).map(k=>({k,n:1}))];
-  const budget=(st.type==='mat'?3+n*.8:RL.roomBudget.base+RL.roomBudget.per*n)*(df.count||1),W=RL.waves||{two:8,three:99},wp=df.waveP||.35;
+  const cm=crowdMul(),budget=(st.type==='mat'?3+n*.8:RL.roomBudget.base+RL.roomBudget.per*n)*(df.count||1)*cm,W=RL.waves||{two:8,three:99},wp=df.waveP||.35;
   if(type==='elite'){const ek=st.elite[Math.floor(R()*st.elite.length)];return[[{k:ek,n:1,elite:true}].concat(fill(budget*.45)),fill(budget*.4)]}
   const nW=n>=W.three&&R()<wp*.6?3:n>=W.two&&R()<wp?2:1;if(nW===1)return[fill(budget)];
   const per=budget*(1+.15*(nW-1))/nW,out=[];for(let i=0;i<nW;i++)out.push(fill(per));return out}
 function spawnWave(){RUN.waveQ=false;const w=RUN.waves&&RUN.waves[RUN.wave];if(!w)return;const spots=[];RUN.waveN=w.reduce((s,g)=>s+g.n,0);
-  const free=(minP,minS)=>{let x,z,tries=0;do{x=rnd(-HX+1.2,HX-1.2);z=rnd(-HZ+1.5,3);tries++}while(tries<60&&(Math.hypot(x-P.x,z-P.z)<minP||blocked(x,z,.6)||spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<minS)));return[x,z]};
+  const free=(minP,minS)=>{let x,z,tries=0;do{x=rnd(-HX+1.2,HX-1.2);z=rnd(-HZ+1.5,HZ-7.5);tries++}while(tries<60&&(Math.hypot(x-P.x,z-P.z)<minP||blocked(x,z,.6)||spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<minS)));return[x,z]};
   for(const g of w){const d0=D.ENEMIES[g.k],pack=!g.elite&&!d0.boss&&d0.ai==='chase'&&g.n>=(RL.pack||99);const c=pack?free(6.5,2.2):null;
    for(let i=0;i<g.n;i++){let x,z;
-    if(pack){let ok=false;for(let t=0;t<24&&!ok;t++){const a=rnd(0,TAU),r=rnd(.5,1.7);x=clamp(c[0]+Math.sin(a)*r,-HX+1,HX-1);z=clamp(c[1]+Math.cos(a)*r,-HZ+1.2,3.5);ok=!blocked(x,z,.5)&&!spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<.85)}if(!ok)[x,z]=free(6,1.6)}
+    if(pack){let ok=false;for(let t=0;t<24&&!ok;t++){const a=rnd(0,TAU),r=rnd(.5,1.7);x=clamp(c[0]+Math.sin(a)*r,-HX+1,HX-1);z=clamp(c[1]+Math.cos(a)*r,-HZ+1.2,HZ-7);ok=!blocked(x,z,.5)&&!spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<.85)}if(!ok)[x,z]=free(6,1.6)}
     else[x,z]=free(6,1.6);
     const d=d0;if(d.boss){const twin=w.filter(q=>D.ENEMIES[q.k].boss).length>1;x=twin?(spots.length?2.6:-2.6):0;z=-5}spots.push([x,z]);
     const aff=g.elite?rollAffixes(RUN.diff.id==='n'?1:2):(g.aff&&Math.random()<g.aff?rollAffixes(1):[]);spawnEnemy(g.k,x,z,{elite:g.elite,aff})}}}

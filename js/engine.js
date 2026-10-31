@@ -264,11 +264,11 @@ function camFit(){camera.clearViewOffset();camera.aspect=VW/VH;camera.fov=CAM.fo
   const center=(dist)=>{let lo=-HZ-6,hi=HZ+6;for(let i=0;i<30;i++){const m=(lo+hi)/2;camPlace(m,dist);const c=(yT()+yB())/2;if(c>(top+bot)/2)hi=m;else lo=m}return(lo+hi)/2};
   const widthOk=(dist,tz)=>{camPlace(tz,dist);for(const z of[-HZ,0,HZ]){const v=ndc(HX+CAM.pad,0,z);if(Math.abs(v.x)>1)return false}return true};
   let lo=8,hi=120;for(let i=0;i<30;i++){const m=(lo+hi)/2;if(widthOk(m,0))hi=m;else lo=m}let dist=Math.max(hi,CAM.min);
-  let tz=center(dist);camPlace(tz,dist);let fits=yT()-yB()<=band;
+  let tz=center(dist);camPlace(tz,dist);let fits=yT()-yB()<=band;const fitsRaw=fits;
   if(!fits){const cap=dist*CAM.landCap;let d2=dist;for(;d2<=cap;d2+=.5){tz=center(d2);camPlace(tz,d2);if(yT()-yB()<=band)break}dist=Math.min(d2,cap);tz=center(dist);camPlace(tz,dist);fits=yT()-yB()<=band}
   camDist=dist;camC=tz;
   if(fits){camMin=camMax=tz}else{let l=-HZ-8,r=tz;for(let i=0;i<30;i++){const m=(l+r)/2;camPlace(m,dist);if(yT()>top)r=m;else l=m}camMin=r;l=tz;r=HZ+8;for(let i=0;i<30;i++){const m=(l+r)/2;camPlace(m,dist);if(yB()<bot)l=m;else r=m}camMax=l;if(camMin>camMax)camMin=camMax=tz}
-  if(scene.fog&&G.mode==='run'){scene.fog.near=camDist*.8;scene.fog.far=camDist*2.2}}
+  if(scene.fog&&G.mode==='run'){scene.fog.near=camDist*.8;scene.fog.far=camDist*2.2}return fitsRaw}
 function camSnap(){camFitW=0;updCam(1)}
 function updCam(k){if(G.mode==='run'){if(camFitW!==VW||camFitH!==VH){camFitW=VW;camFitH=VH;camFit()}const tz=camMin===camMax?camC:clamp(P.z+CAM.lead,camMin,camMax);camT.x=lerp(camT.x,0,k);camT.y=0;camT.z=lerp(camT.z,tz,k);
     const sx=shake>0?rnd(-1,1)*shake*.5:0,sz=shake>0?rnd(-1,1)*shake*.5:0;camera.position.set(camT.x+sx,camT.y+Math.sin(camPitch)*camDist,camT.z+Math.cos(camPitch)*camDist+sz);camera.lookAt(camT.x+sx,camT.y,camT.z+sz)}

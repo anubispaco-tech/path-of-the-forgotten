@@ -4,7 +4,7 @@
  * 關閉遙測：把 TEL_URL 清空 */
 'use strict';
 const TEL_URL='https://script.google.com/macros/s/AKfycbxD2gvTSVyPAempBsjuVoj-ugKVlbDm8gBSXeC63r-Sgn9FQCN50O4LIEyGccix8lPhBQ/exec';
-const TEL_VER='0.5.6';
+const TEL_VER='0.5.8';
 const TEL={q:[],timer:0,ready:false};
 
 function telPid(){if(!SAVE.pid)SAVE.pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);return SAVE.pid}

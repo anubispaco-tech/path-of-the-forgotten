@@ -23,6 +23,8 @@ D.RULES = {
   roomBudget: { base: 3.6, per: .26 },   // 戰鬥房的怪物點數：base + per × 房號（會再乘難度的 count）
   waves: { two: 4, three: 16 },          // 第幾間起可能出現 2 波、3 波
   waveEarly: .3,                         // 這一波剩下多少比例的怪時，下一波提前進場（0 = 清空才進場）
+  roomDepth: { min: 21, max: 33 },     // 房間深度：直式手機自動加深到填滿畫面
+  crowd: { chapter: .15, depth: .6 },    // 怪物倍率：每章 +15%；房間深度比例的 0.6 次方（個體血量除以倍率的平方根）
   pack: 3,                               // 近戰小怪一次 3 隻以上會成群出現
   hitstop: { multi: 3, multiT: .045, elite: .08, boss: .16 }, // 命中停頓：多殺門檻、多殺/菁英/首領停頓秒數
   roomHp: .05,                           // 每往後一間，怪物生命 +5%

@@ -27,7 +27,7 @@ function enemyScale(d,summoned){const lv=RUN.lv,i=RUN.roomN,df=RUN.diff,R=D.RULE
   const hpM=(d.boss?1+(lv-1)*.25:(1+(lv-1)*.3)*(1+(i-1)*R.roomHp)*(summoned?.6:1))*df.hp,dmM=(1+(lv-1)*.24)*(d.boss?1:1+(i-1)*R.roomDmg)*df.dmg;return{hpM,dmM}}
 function spawnEnemy(key,x,z,o){o=o||{};const d=D.ENEMIES[key];if(!d)return null;const el=!!o.elite,sc=d.scale*(el?D.ELITE.scale:1)*(o.small?.75:1);
   const c=makeActor(d.model,{scale:sc,eye:el?'#ffd04a':d.eye,tint:d.tint,recolor:d.recolor,show:d.show,wr:d.wr,wl:d.wl,emis:el?'#3a2a08':d.emis,pixScale:el?1.3:1},key);c.root.position.set(x,d.fly||0,z);scene.add(c.root);
-  const{hpM,dmM}=enemyScale(d,o.summoned||o.small);const hp=Math.round(d.hp*hpM*(el?D.ELITE.hp:1)*(o.small?.45:1));
+  const{hpM,dmM}=enemyScale(d,o.summoned||o.small);const crowdHp=d.boss||el?1:1/Math.sqrt(RUN&&RUN.cm||1);const hp=Math.round(d.hp*hpM*crowdHp*(el?D.ELITE.hp:1)*(o.small?.45:1));
   const e={key,d,c,x,z,yaw:Math.atan2(P.x-x,P.z-z),r:d.r*(el?1.25:1),hp,max:hp,dmg:d.dmg*dmM*(el?D.ELITE.dmg:1),spd:d.spd*(RUN.diff.spd||1),state:'rise',t:0,slowT:0,burnT:0,burnD:0,flashT:0,kx:0,kz:0,
     cd:rnd(.8,2),touchT:0,phase:0,side:Math.random()<.5?-1:1,sideT:0,ai:{},sh:shadowFor(d.r*(el?1.3:1)),boss:!!d.boss,elite:el,dead:false,haste:1,aff:[],stunT:0,shield:0,small:!!o.small,summoned:!!o.summoned};
   for(const a of(o.aff||[]))addAffix(e,a);
@@ -48,7 +48,7 @@ function moveEnt(o,dx,dz,r){if(!blocked(o.x+dx,o.z,r))o.x+=dx;else{const c=neare
 function nearestColl(x,z,r){for(const c of room.coll)if((x-c.x)*(x-c.x)+(z-c.z)*(z-c.z)<(c.r+r)*(c.r+r))return c;return null}
 function wallHit(x,z,r){if(x<-HX+r||x>HX-r||z<-HZ+r||z>HZ-r)return'w';for(const c of room.coll)if((x-c.x)*(x-c.x)+(z-c.z)*(z-c.z)<(c.r+r)*(c.r+r))return c;return null}
 function shadowFor(r){const s=new T.Mesh(shadowGeo,shadowMat);s.scale.set(r*2.4,1,r*2.4);s.position.y=.02;scene.add(s);return s}
-function freeSpot(minD,R){for(let i=0;i<60;i++){const x=rnd(-HX+1.2,HX-1.2),z=rnd(-HZ+1.5,3);if(Math.hypot(x-P.x,z-P.z)<(minD||5))continue;if(blocked(x,z,R||.6))continue;return[x,z]}return[rnd(-3,3),-5]}
+function freeSpot(minD,R){for(let i=0;i<60;i++){const x=rnd(-HX+1.2,HX-1.2),z=rnd(-HZ+1.5,HZ-7.5);if(Math.hypot(x-P.x,z-P.z)<(minD||5))continue;if(blocked(x,z,R||.6))continue;return[x,z]}return[rnd(-3,3),-5]}
 
 /* ================= 玩家攻擊 ================= */
 function nearestEnemy(){let best=null,bd=1e9;for(const e of enemies){if(e.dead||e.state==='rise'&&e.t<.6)continue;const d=Math.hypot(e.x-P.x,e.z-P.z)+(losBlocked(P.x,P.z,e.x,e.z)?6:0);if(d<bd){bd=d;best=e}}return best}

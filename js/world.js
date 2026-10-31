@@ -1,6 +1,10 @@
 /* 被遺忘者之路 · 場景：副本房間（地城、野外）、事件房物件、營地 */
 'use strict';
-const RW=12,RD=21,HX=RW/2,HZ=RD/2;
+let RW=12,RD=21,HX=RW/2,HZ=RD/2;
+function setRoomDepth(d){RD=d;HZ=RD/2}
+/* 全螢幕：直式手機把房間加深，直到剛好填滿畫面（不縮小、不捲動）；橫式維持 21 */
+function fitRoomDepth(){const lo=D.RULES.roomDepth.min,hi=D.RULES.roomDepth.max;setRoomDepth(lo);if(!(VW<VH))return RD;
+  let best=lo;for(let d=lo+3;d<=hi;d+=3){setRoomDepth(d);if(camFit())best=d;else break}setRoomDepth(best);camFitW=0;return RD}
 const room={g:null,coll:[],theme:null,gate:null,doors:[],portal:null,gateOpen:0,torches:[],candles:[],fire:null,rune:null,npc:null,evo:null,spin:[]};
 function themeLights(th){scene.background=new T.Color(th.fog);scene.fog=new T.Fog(th.fog,10,60);hemi.color.set(th.hemiSky);hemi.groundColor.set(th.hemiGround);hemi.intensity=th.amb;sun.color.set(th.sun);moteMat.color.set(th.kit&&th.kit.snow?'#ffffff':th.torch)}
 function clearGroup(g){room.fire=null;room.doors=[];room.gate=null;room.spin=[];if(room.npc){disposeChar(room.npc);room.npc=null}room.evo=null;if(!g)return;scene.remove(g);g.traverse(n=>{if(n.isInstancedMesh)n.dispose();if(n.material&&n.userData.own){if(n.material.map)n.material.map.dispose();n.material.dispose()}})}
@@ -46,7 +50,7 @@ function crystal(g,x,z,col,R){const cm=M(col,{emissive:col,emissiveIntensity:.55
 /* ---------- 地城房間（KayKit Dungeon） ---------- */
 function buildDungeon(g,th,R,opts){const kit=th.kit,tn=kit.tint,rr=(a,b)=>a+R()*(b-a),pk=a=>a[Math.floor(R()*a.length)];
   mesh(GEO.plane,MB(th.fog),0,-.32,0,140,140,1,g).rotation.x=-Math.PI/2;
-  for(let ix=0;ix<4;ix++)for(let iz=0;iz<7;iz++){const x=-4.5+ix*3,z=-9+iz*3;piece('floor_tile_large',x,0,z,Math.floor(R()*4)*Math.PI/2,DS,g,tn)}
+  for(let ix=0;ix<4;ix++)for(let iz=0;iz<Math.round(RD/3);iz++){const x=-4.5+ix*3,z=-HZ+1.5+iz*3;piece('floor_tile_large',x,0,z,Math.floor(R()*4)*Math.PI/2,DS,g,tn)}
   for(let i=0;i<6;i++){const c=new T.Mesh(GEO.plane,crackMat);c.rotation.x=-Math.PI/2;c.rotation.z=rr(0,TAU);c.position.set(rr(-HX+1,HX-1),.05,rr(-HZ+1,HZ-1));c.scale.setScalar(rr(1.2,2.2));g.add(c)}
   floorRune(g,th,opts.boss);
   const NZ=-HZ-.375,walls=['wall','wall','wall_cracked','wall_window_closed'];
@@ -78,7 +82,7 @@ function groundTex(th){const k=th.ground.join();if(GROUND_TEX[k])return GROUND_T
 function buildOutdoor(g,th,R,opts){const kit=th.kit,tn=kit.tint,rr=(a,b)=>a+R()*(b-a),pk=a=>a[Math.floor(R()*a.length)],tt=n=>/tree_pine/.test(n)&&kit.treeTint?kit.treeTint:tn;
   mesh(GEO.plane,MB(th.fog),0,-.32,0,140,140,1,g).rotation.x=-Math.PI/2;
   const out=mesh(GEO.plane,M(th.ground[2]),0,-.02,0,40,48,1,g);out.rotation.x=-Math.PI/2;out.castShadow=false;
-  const gr=new T.Mesh(GEO.plane,new T.MeshLambertMaterial({map:groundTex(th)}));gr.rotation.x=-Math.PI/2;gr.scale.set(RW+.6,RD+.6,1);gr.receiveShadow=true;g.add(gr);
+  const gtx=groundTex(th);gtx.repeat.set(3,5*RD/21);const gr=new T.Mesh(GEO.plane,new T.MeshLambertMaterial({map:gtx}));gr.rotation.x=-Math.PI/2;gr.scale.set(RW+.6,RD+.6,1);gr.receiveShadow=true;g.add(gr);
   for(let i=0;i<5;i++){const c=new T.Mesh(GEO.plane,crackMat);c.rotation.x=-Math.PI/2;c.rotation.z=rr(0,TAU);c.position.set(rr(-HX+1,HX-1),.02,rr(-HZ+1,HZ-1));c.scale.setScalar(rr(1,2));g.add(c)}
   floorRune(g,th,opts.boss);
   // 東西兩側：岩石牆 + 後方枯樹
