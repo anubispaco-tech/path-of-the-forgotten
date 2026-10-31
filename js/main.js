@@ -6,8 +6,8 @@ $('modal').addEventListener('pointerdown',e=>{if(e.target===$('modal'))closeModa
 document.querySelectorAll('.hubNav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 $('pauseBtn').addEventListener('click',openPause);
 $('resumeBtn').addEventListener('click',()=>{$('pause').hidden=true;G.paused=false;later(.1,processQueue)});
-$('quitBtn').addEventListener('click',()=>{$('pause').hidden=true;if(RUN){RUN.state='dead';endRun(false)}});
-$('saveQuitBtn').addEventListener('click',()=>{$('pause').hidden=true;if(RUN){snapRun();toHub();toast('已保存，回到營地後可從出征頁繼續')}});
+$('quitBtn').addEventListener('click',()=>{$('pause').hidden=true;if(RUN){RUN.quit=true;RUN.state='dead';endRun(false)}});
+$('saveQuitBtn').addEventListener('click',()=>{$('pause').hidden=true;if(RUN){snapRun();tel('save_quit',{rlv:RUN.rlv,hp:telHp()});toHub();toast('已保存，回到營地後可從出征頁繼續')}});
 document.querySelectorAll('#qSeg button').forEach(b=>b.addEventListener('click',()=>{SAVE.q=b.dataset.q;save();applyQuality();document.querySelectorAll('#qSeg button').forEach(x=>x.classList.toggle('on',x===b))}));
 
 /* ================= 輸入 ================= */

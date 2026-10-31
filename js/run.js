@@ -20,6 +20,7 @@ function beginRun(st,o){const snap=o.resume||null,diff=D.DIFFS.find(d=>d.id===(s
   RUN.acts=(SAVE.actEq||[]).filter(id=>unlocked('act:'+id)).slice(0,unlocked('slot:act2')?2:1).map(id=>({id,t:0}));
   if(snap){for(const k of['perks','curses','gold','shards','dust','crystals','kills','elites','time','cleared','rerolls','revived','phoenix','seed','rlv','xp','chest','ev','picks'])if(snap[k]!=null)RUN[k]=JSON.parse(JSON.stringify(snap[k]));RUN.need=xpNeedRun(RUN.rlv)}
   runStats();RUN.hp=snap?Math.max(1,Math.round(RUN.maxHp*snap.hpK)):RUN.maxHp;if(!snap){SAVE.runs++;save()}
+  tel(snap?'run_resume':'run_start',{ch:st.id,room:snap?snap.roomN:1,power:telPower(),hp:RUN.maxHp,acts:RUN.acts.map(a=>a.id),rerolls:RUN.rerolls});
   showHubScene(false);$('hub').hidden=true;$('title').hidden=true;$('hud').hidden=false;$('hudStage').textContent=st.ch+' · '+st.name+(diff.id!=='n'?' · '+diff.n:'');$('hudStage').style.color=diff.id!=='n'?diff.col:'';
   if(!P.c){P.c=makeHero(.78)}if(!P.sh)P.sh=shadowFor(.5);scene.add(P.c.root);P.c.root.visible=true;P.sh.visible=true;P.shieldUp=false;P.amb=false;P.atkN=0;
   P.dead=false;P.c.one=null;P.c.cur='';play(P.c,'Idle_Combat',0);G.mode='run';G.paused=false;clearAllies();buildActBtns();
@@ -66,7 +67,7 @@ function earlyWave(){if(!RUN||RUN.waveQ||!(RUN.state==='fight')||!RUN.waves||RUN
   RUN.waveQ=true;RUN.wave++;banner('援軍','敵人從暗處湧出','#ff8a4a');later(.5,()=>{if(RUN&&RUN.state==='fight')spawnWave()})}
 function waveCleared(){if(!RUN||!(RUN.state==='fight'||RUN.state==='ritual'))return;if(enemies.some(o=>!o.dead))return;if(RUN.waveQ)return;
   if(RUN.waves&&RUN.wave<RUN.waves.length-1){RUN.wave++;RUN.waveQ=true;banner('下一波','敵人逼近','#ff8a4a');later(.6,()=>{if(RUN&&RUN.state==='fight')spawnWave()});return}
-  const wasRitual=RUN.state==='ritual';RUN.state='clear';for(const l of loot)l.mag=true;RUN.cleared++;track('room');
+  const wasRitual=RUN.state==='ritual';RUN.state='clear';for(const l of loot)l.mag=true;RUN.cleared++;track('room');tel('room',{type:RUN.type,t:Math.round(RUN.roomT||0),hp:telHp(),rlv:RUN.rlv,dmg:Math.round(RUN.dmgDone||0)});
   if(RUN.type==='boss'||(RUN.stage.type==='mat'&&RUN.roomN===RUN.total)){later(.6,()=>{RUN.state='won';banner('副本完成',RUN.stage.name,'#e2b84d');once(P.c,'Cheer');later(2.2,()=>endRun(true))});return}
   if(wasRitual){const ok=RUN.ritT>0;$('hudTimer').hidden=true;if(ok){banner('儀式完成','選擇一項傳說技能','#c38cff');RUN.cq.push('legend')}else banner('儀式結束','時間到了，祭壇沉寂了','#8a8090')}
   if(RUN.type==='elite')RUN.cq.push('elite');
@@ -108,18 +109,18 @@ function perkCard(p,o){o=o||{};const cur=perk(p.id),rar=D.PERK_RAR[p.rar],sch=D.
     p.max>1&&p.max<99?h('em',null,`Lv ${cur} → ${cur+1}`):null,o.price!=null?h('strong',{cls:'price'+(RUN.gold<o.price?' no':'')},svg('gold'),o.price):null)}
 function openChoice(sub,title){G.paused=true;RUN.choosing=true;banT=0;$('banner').classList.remove('on');$('perkSub').textContent=sub;$('perkBox_h').textContent=title;$('perkCards').replaceChildren();$('rerollBtn').hidden=true;$('perkFoot').replaceChildren();$('perk').hidden=false;joyReset()}
 function closeChoice(){$('perk').hidden=true;RUN.choosing=false;G.paused=false;later(.15,processQueue)}
-function showChoice(o){openChoice(o.sub,o.title);const list=rollPerks(3,o);if(!list.length){closeChoice();return}RUN.lastChoice=o;
+function showChoice(o){openChoice(o.sub,o.title);const list=rollPerks(3,o);if(!list.length){closeChoice();return}RUN.lastChoice=o;RUN.lastOffer=list.map(p=>p.id).join(' ');RUN.lastKind=o.kind;
   list.forEach(p=>$('perkCards').append(perkCard(p,{click:()=>pickPerk(p)})));
   $('rerollBtn').hidden=RUN.rerolls<=0||o.kind==='legend';$('rerollN').textContent=RUN.rerolls}
-$('rerollBtn').addEventListener('click',()=>{if(RUN&&RUN.rerolls>0&&RUN.lastChoice){RUN.rerolls--;showChoice(RUN.lastChoice)}});
-function pickPerk(p,keepOpen){if(!keepOpen)closeChoice();applyPerk(p.id);ringFx(P.x,P.z,3,p.rar==='c'?D.SCHOOLS[p.sch].col:D.PERK_RAR[p.rar].col,.6);emit(P.x,1,P.z,D.SCHOOLS[p.sch].col,30,3,.8,{up:2});once(P.c,'Spellcast_Raise',1.4)}
+$('rerollBtn').addEventListener('click',()=>{if(RUN&&RUN.rerolls>0&&RUN.lastChoice){RUN.rerolls--;tel('reroll',{kind:RUN.lastKind,of:RUN.lastOffer});showChoice(RUN.lastChoice)}});
+function pickPerk(p,keepOpen){tel('pick',{p:p.id,kind:RUN.lastKind,of:RUN.lastOffer,rlv:RUN.rlv});if(!keepOpen)closeChoice();applyPerk(p.id);ringFx(P.x,P.z,3,p.rar==='c'?D.SCHOOLS[p.sch].col:D.PERK_RAR[p.rar].col,.6);emit(P.x,1,P.z,D.SCHOOLS[p.sch].col,30,3,.8,{up:2});once(P.c,'Spellcast_Raise',1.4)}
 function applyPerk(id,silent){if(id==='heal'){healP(Math.round(RUN.maxHp*.4));return}RUN.perks[id]=(RUN.perks[id]||0)+1;if(!silent){RUN.picks++;track('pick')}
   const p=D.PERKS.find(x=>x.id===id);if(p&&p.evo){track('evo');banner('進化','「'+p.n+'」','#ffa53a')}
   const before=RUN.maxHp;runStats();if(id==='hp')RUN.hp+=RUN.maxHp-before;RUN.hp=Math.min(RUN.hp,RUN.maxHp);if(id==='bshield')P.shieldUp=true;syncOrbs();syncAllies();updHud()}
 
 /* ================= 事件房 ================= */
 function priceM(){return 1+(RUN.lv-1)*.25}
-function openEvent(id){const ev=D.EVENTS.find(e=>e.id===id),box=()=>$('perkCards'),leave=(txt)=>h('button',{type:'button',cls:'btn ghost',on:{click:()=>{closeChoice();openDoor()}}},txt||'離開');
+function openEvent(id){tel('event',{e:id});const ev=D.EVENTS.find(e=>e.id===id),box=()=>$('perkCards'),leave=(txt)=>h('button',{type:'button',cls:'btn ghost',on:{click:()=>{closeChoice();openDoor()}}},txt||'離開');
   const heal=Math.round(RUN.maxHp*.5*(1+tal('t_heal')*.1)*(RUN.diff.heal||1));
   if(id==='fire'){openChoice(ev.n,'在火邊稍作停留');
     box().append(h('button',{type:'button',cls:'pc',style:'--pc:#93d95e',on:{click:()=>{closeChoice();healP(heal);ringFx(P.x,P.z,3,'#93d95e',.6);openDoor()}}},h('div',{cls:'ic'},svg('heal')),h('b',null,'回復生命'),h('span',null,`回復 50% 最大生命`)),
@@ -155,6 +156,7 @@ function endRun(win){if(!RUN||RUN.ended)return;RUN.ended=true;G.paused=true;$('p
   const runes=[];if(win&&rw.rune)for(let i=0;i<rw.rune;i++)runes.push(genRune(wpick([[1,60],[2,30],[3,10]])));
   if(win)SAVE.clear[key]=(SAVE.clear[key]||0)+1;SAVE.gold+=gold;SAVE.shards+=shards;SAVE.dust+=dust;SAVE.crystals+=crystals;for(const g of gear)addGear(g);for(const r of runes)SAVE.runes.push(r);
   SAVE.kills=(SAVE.kills||0)+RUN.kills;SAVE.run=null;
+  tel('run_end',{win,quit:!!RUN.quit,first,done,total,t:Math.round(RUN.time),kills:RUN.kills,elites:RUN.elites,rlv:RUN.rlv,picks:RUN.picks,perks:telPerks(),curses:RUN.curses.join(' '),xp,gold,gear:gear.length,by:RUN.lastBy||''});
   const unl=[];if(firstN&&st.first)for(const u of st.first.unlock){if(!SAVE.unl.includes(u)){SAVE.unl.push(u);unl.push(u)}if(u.startsWith('act:')&&(SAVE.actEq||[]).length<(unlocked('slot:act2')?2:1)){SAVE.actEq=(SAVE.actEq||[]).concat(u.slice(4))}}
   const lv0=SAVE.lvl;SAVE.xp+=xp;while(SAVE.xp>=xpNeed(SAVE.lvl)){SAVE.xp-=xpNeed(SAVE.lvl);SAVE.lvl++}
   if(win&&st.type==='main'){track('main');ach('clear:'+st.id);if(df.id!=='n')ach('diff:h');const cnt={};for(const id in RUN.perks){const p=D.PERKS.find(x=>x.id===id);if(p&&p.sch!=='gen')cnt[p.sch]=(cnt[p.sch]||0)+1}for(const s in cnt)if(cnt[s]>=4)ach('school:'+s)}

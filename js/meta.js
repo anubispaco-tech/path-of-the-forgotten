@@ -57,7 +57,7 @@ function mergeOne(list){const eqIds=Object.values(SAVE.eq);list=list.slice().sor
   let refund=0;for(const x of rest){refund+=x.up*2;for(const r of x.sock||[])if(r)SAVE.runes.push(r);SAVE.inv=SAVE.inv.filter(i=>i!==x)}
   base.r++;base.up=Math.max(base.up,...rest.map(x=>x.up));base.lv=Math.max(base.lv,...rest.map(x=>x.lv));const ns=D.RARITY[base.r].sock;while(base.sock.length<ns)base.sock.push(null);if(D.RARITY[base.r].fx&&!base.fx)base.fx=pick(D.GEAR_FX).id;
   SAVE.shards+=refund;ach('merge');if(base.r>=5)ach('myth');return base}
-function mergeAll(){let n=0,guard=0;let g;while((g=mergeGroups()).length&&guard++<200){mergeOne(g[0]);n++}save();return n}
+function mergeAll(){let n=0,guard=0;let g;while((g=mergeGroups()).length&&guard++<200){mergeOne(g[0]);n++}save();if(n)tel('merge',{n});return n}
 function dismantleGain(it){return 1+it.r*3+it.up}
 /* ================= 符文 ================= */
 function genRune(t,sys){return{id:SAVE.uid++,sys:sys||pick(Object.keys(D.RUNES)),t:clamp(t||1,1,5)}}
@@ -72,7 +72,7 @@ function openBox(id,count){const bx=D.BOXES.find(b=>b.id===id),cost=count>=10?bx
       for(const[n,min]of bx.pity){const cnt=min>=4&&bx.id==='soul'?SAVE.pity.soulL:SAVE.pity[pk];if(cnt>=n&&tier<min)tier=min}
       if(tier>=(bx.id==='soul'?3:3))SAVE.pity[pk]=0;if(bx.id==='soul'&&tier>=4)SAVE.pity.soulL=0}
     if(bx.kind==='gear'){const it=genGear(Math.max(1,SAVE.lvl-1+ri(0,2)),null,null,{r:tier});addGear(it);out.push({gear:it})}else{const r=genRune(tier);SAVE.runes.push(r);out.push({rune:r})}}
-  track('box');save();return out}
+  track('box');save();tel('gacha',{box:id,n:count,cost,got:out.map(o=>o.gear?'g'+o.gear.r:'r'+o.rune.t),pity:SAVE.pity});return out}
 
 /* ================= 每日任務、素材關次數、成就 ================= */
 function ensureDaily(){const d=today();if(!SAVE.daily||SAVE.daily.date!==d){const pool=D.DAILY.pool.slice(),q=[];while(q.length<D.DAILY.pick&&pool.length)q.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
@@ -88,7 +88,7 @@ function claimable(){ensureDaily();let n=0;for(const q of SAVE.daily.q){const de
 
 /* ================= 營地挖掘、掃蕩 ================= */
 function idleGain(){const hrs=Math.min(D.RULES.idleCapH,(Date.now()-(SAVE.idle.t||Date.now()))/3.6e6),m=1+SAVE.lvl*.1;return{hrs,gold:Math.floor(D.RULES.idleRate.gold*m*hrs),shards:Math.floor(D.RULES.idleRate.shards*m*hrs)}}
-function sweep(st){if(!SAVE.clear[st.id]||matLeft(st)<=0)return;useMat(st);const rw=st.reward,lvK=1+(stageLv(st)-st.lv)*.12,b=baseStats(),out=[];
+function sweep(st){if(!SAVE.clear[st.id]||matLeft(st)<=0)return;tel('sweep',{ch:st.id});useMat(st);const rw=st.reward,lvK=1+(stageLv(st)-st.lv)*.12,b=baseStats(),out=[];
   const g=Math.round((rw.gold||0)*lvK*b.goldM),s=Math.round((rw.shards||0)*lvK*b.lootM),du=Math.round((rw.dust||0)*lvK),cr=Math.round((rw.crystals||0)*lvK),xp=Math.round((rw.xp||0)*lvK);
   SAVE.gold+=g;SAVE.shards+=s;SAVE.dust+=du;SAVE.crystals+=cr;SAVE.xp+=xp;while(SAVE.xp>=xpNeed(SAVE.lvl)){SAVE.xp-=xpNeed(SAVE.lvl);SAVE.lvl++}
   if(g)out.push(['gold','#e2b84d','金幣 +'+g]);if(s)out.push(['shard','#bfe4ff','骨片 +'+s]);if(du)out.push(['dust','#8fa8ff','符文粉塵 +'+du]);if(cr)out.push(['crystal','#5affe6','魂晶 +'+cr]);out.push(['xp','#c38cff','帳號經驗 +'+xp]);

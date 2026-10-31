@@ -92,3 +92,10 @@
 | 怪物（惡魔、蕈王、恐龍、幽魂等） | Quaternius · Ultimate Monsters |
 | 岩石、蘑菇、草叢 | Quaternius · Stylized Nature MegaKit |
 | 像素角色彩蛋 | 0x72 · 16x16 DungeonTileset II |
+
+## 遊玩數據（v0.5.5）
+
+- 前端：`js/telemetry.js`，送到 GAS 試算表（後端程式在 `gas/Code.gs`）
+- 第一次開新版會送一筆 `snapshot`，把既有存檔當起點
+- 事件：`open` `run_start` `run_resume` `room` `pick` `reroll` `event` `death` `run_end` `save_quit` `bg` `gacha` `merge` `sweep`
+- 開發者標記：網址加 `?dev=1`（取消 `?dev=0`）；自訂名稱：`?name=名字`。兩者都存在該份存檔裡

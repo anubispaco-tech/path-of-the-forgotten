@@ -244,7 +244,7 @@ function updAllies(dt){const S=RUN.st,haste=perk('legion')?1.6:1;for(let i=allie
 function hurtP(dmg,src,dot){if(P.dead||P.inv>0||!RUN||RUN.state==='dead'||RUN.god)return;const S=RUN.st;
   if(!dot&&S.dodge>0&&Math.random()<S.dodge){floatTxt(P.x,2.2,P.z,'閃避','#9fb4ff');emit(P.x,1,P.z,'#9fb4ff',10,2,.4);P.inv=.25;if(perk('phantom')&&G.time>(P.phT||0)){P.phT=G.time+1;ringShot(8,.8,'#9fb4ff')}return}
   if(!dot&&P.shieldUp){P.shieldUp=false;P.shieldT=8;P.inv=.4;ringFx(P.x,P.z,2,'#e8d9a8',.4);floatTxt(P.x,2.2,P.z,'格擋','#e8d9a8');if(P.shieldFx)P.shieldFx.visible=false;return}
-  dmg=Math.max(1,Math.round(dmg*(1-S.def)*rnd(.92,1.08)));RUN.hp-=dmg;P.inv=dot?.1:.55;P.hitT=.15;shake=Math.max(shake,dot?.06:.18);
+  dmg=Math.max(1,Math.round(dmg*(1-S.def)*rnd(.92,1.08)));RUN.hp-=dmg;RUN.lastBy=telSrc(dot?null:src);P.inv=dot?.1:.55;P.hitT=.15;shake=Math.max(shake,dot?.06:.18);
   floatTxt(P.x,2.2,P.z,'-'+dmg,'#ff5a5a','big');flash(P.c,[1,.1,.1],.8);setTimeout(()=>P.c&&flash(P.c,[0,0,0],0),110);if(!P.c.one&&!dot)once(P.c,'Hit_A',1.6);
   if(!dot&&src&&!src.dead&&perk('thorns'))hitEnemy(src,S.atk*.8*perk('thorns'),Math.atan2(src.x-P.x,src.z-P.z),'#e8d9a8',{noCrit:true,src:'aoe'});
   if(!dot&&perk('fortress')&&G.time>(P.fortT||0)){P.fortT=G.time+.5;for(let i=0;i<8;i++)shoot(P.x,P.z,i/8*TAU,S.atk*.6,'#e8d9a8',{spike:true,life:.7})}
@@ -255,7 +255,7 @@ function hurtP(dmg,src,dot){if(P.dead||P.inv>0||!RUN||RUN.state==='dead'||RUN.go
     else die()}updHud()}
 function clearEbolts(){for(const b of ebolts)scene.remove(b.m);ebolts.length=0}
 function healP(n,silent,raw){if(!RUN||n<=0)return;if(!raw)n=n*RUN.st.healM;const before=RUN.hp;RUN.hp=Math.min(RUN.maxHp,RUN.hp+n);if(RUN.hp>before&&!silent){floatTxt(P.x,2.4,P.z,'+'+Math.round(RUN.hp-before),'#93d95e');emit(P.x,1,P.z,'#93d95e',8,1.5,.6,{up:1.5})}updHud()}
-function die(){P.dead=true;RUN.state='dead';once(P.c,'Death_A',1);emit(P.x,1,P.z,'#9dff6a',30,3,1,{gr:2});banner('你倒下了','骨頭散落一地','#e0474f');later(2.2,()=>endRun(false))}
+function die(){P.dead=true;RUN.state='dead';tel('death',{type:RUN.type,by:RUN.lastBy,wave:RUN.wave,rlv:RUN.rlv,t:Math.round(RUN.roomT||0),runT:Math.round(RUN.time),perks:telPerks(),phoenix:RUN.phoenix,revived:RUN.revived});once(P.c,'Death_A',1);emit(P.x,1,P.z,'#9dff6a',30,3,1,{gr:2});banner('你倒下了','骨頭散落一地','#e0474f');later(2.2,()=>endRun(false))}
 const joy={id:null,ox:0,oy:0,x:0,y:0},keys=new Set();
 function inputDir(){let ix=joy.x,iz=joy.y;if(keys.has('a')||keys.has('arrowleft'))ix-=1;if(keys.has('d')||keys.has('arrowright'))ix+=1;if(keys.has('w')||keys.has('arrowup'))iz-=1;if(keys.has('s')||keys.has('arrowdown'))iz+=1;return[ix,iz]}
 function updPlayer(dt){if(P.dead){return}P.inv=Math.max(0,P.inv-dt);P.hitT=Math.max(0,P.hitT-dt);const S=RUN.st;
