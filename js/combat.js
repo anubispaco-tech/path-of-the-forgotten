@@ -101,7 +101,7 @@ function killEnemy(e,src){e.dead=true;e.hp=0;e.state='dead';e.t=0;RUN.kills++;tr
   if(st.loot==='shards'?Math.random()<.75:Math.random()<.08)dropLoot('shard',e.x,e.z,1);
   if(st.loot==='dust'&&Math.random()<.5)dropLoot('dust',e.x,e.z,ri(1,2));
   if(st.loot==='crystals'&&Math.random()<.35)dropLoot('crystal',e.x,e.z,1);
-  if(!e.boss&&!e.summoned){const xv=(e.d.xp||1)*(e.elite?D.ELITE.xp/(e.d.xp||1):1);const xc=xv/(RUN.diff.count||1);dropLoot('xp',e.x,e.z,e.small?Math.max(.5,xc*.4):xc)}
+  if(!e.boss&&!e.summoned){const xv=(e.d.xp||1)*(e.elite?D.ELITE.xp/(e.d.xp||1):1);const xc=xv/(RUN.diff.count||1)/(RUN.cm||1);dropLoot('xp',e.x,e.z,e.small?Math.max(.5,xc*.4):xc)}
   if(e.elite){RUN.elites++;track('elite')}
   if(perk('leech'))healP(Math.round(RUN.maxHp*.03*perk('leech')));
   const S=RUN.st;
